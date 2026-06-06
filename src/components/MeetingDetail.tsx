@@ -1,0 +1,216 @@
+import { useState, useEffect, useMemo } from "react";
+import SessionResults from "@/components/SessionResults";
+import LiveDataSections from "@/components/LiveDataSections";
+import {
+  getSessions,
+  getSessionResults,
+  getStartingGrid,
+} from "@/api/openf1";
+import type { Meeting, Session, SessionResult } from "@/types/api";
+
+interface MeetingDetailProps {
+  meeting: Meeting;
+  onBack: () => void;
+  sessionKey?: number;
+}
+
+function countryFlag(countryCode: string): string {
+  if (!countryCode || countryCode.length !== 2) return "🏁";
+  const offset = 0x1f1e6 - 65;
+  return String.fromCodePoint(
+    countryCode.charCodeAt(0) + offset,
+    countryCode.charCodeAt(1) + offset
+  );
+}
+
+const SESSION_TYPE_LABELS: Record<string, string> = {
+  Practice: "Practice",
+  Qualifying: "Qualifying",
+  Race: "Race",
+  Sprint: "Sprint",
+  SprintQualifying: "Sprint Qualifying",
+};
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "UTC",
+  });
+}
+
+export default function MeetingDetail({ meeting, onBack, sessionKey: initialSessionKey }: MeetingDetailProps) {
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
+  const [results, setResults] = useState<SessionResult[]>([]);
+  const [grid, setGrid] = useState<SessionResult[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Sort sessions by date
+  const sortedSessions = useMemo(
+    () => [...sessions].sort((a, b) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime()),
+    [sessions]
+  );
+
+  const flag = countryFlag(meeting.country_code);
+
+  // Load sessions for this meeting
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+
+    getSessions(meeting.meeting_key)
+      .then((data) => {
+        if (!mounted) return;
+        setSessions(data);
+
+        // Auto-select first session that matches initialSessionKey or has results
+        if (initialSessionKey) {
+          const found = data.find((s) => s.session_key === initialSessionKey);
+          if (found) {
+            setSelectedSession(found);
+            setLoading(false);
+            return;
+          }
+        }
+        // Default to first session
+        if (data.length > 0) {
+          setSelectedSession(data[0]);
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => { mounted = false; };
+  }, [meeting.meeting_key, initialSessionKey]);
+
+  // Load results when a session is selected
+  useEffect(() => {
+    if (!selectedSession) return;
+    let mounted = true;
+
+    Promise.all([
+      getSessionResults(meeting.meeting_key, selectedSession.session_key),
+      getStartingGrid(meeting.meeting_key, selectedSession.session_key),
+    ])
+      .then(([sr, sg]) => {
+        if (!mounted) return;
+        setResults(sr);
+        setGrid(sg);
+      })
+      .catch(() => {
+        if (!mounted) return;
+        setResults([]);
+        setGrid([]);
+      });
+
+    return () => { mounted = false; };
+  }, [selectedSession, meeting.meeting_key]);
+
+  const sessionHasResults = results.length > 0;
+  const isQualifying = selectedSession?.session_type === "Qualifying" || selectedSession?.session_type === "SprintQualifying";
+  const isRace = selectedSession?.session_type === "Race";
+  const isPractice = selectedSession?.session_type === "Practice";
+
+  return (
+    <div className="flex flex-col gap-3">
+      {/* Meeting header */}
+      <div className="bg-f1-bg2 border border-f1-border rounded-lg p-4">
+        <button
+          onClick={onBack}
+          className="text-f1-blue text-xs mb-2 inline-block hover:underline cursor-pointer bg-transparent border-none font-inherit"
+        >
+          ← Back to meetings
+        </button>
+        <h2 className="text-lg text-f1-bright flex items-center gap-2">
+          {flag} {meeting.meeting_name}
+        </h2>
+        <div className="text-xs text-f1-dim mt-1 flex gap-4 flex-wrap">
+          <span>📍 {meeting.circuit_short_name}</span>
+          <span>📍 {meeting.location}, {meeting.country_name}</span>
+          <span>
+            📅 {new Date(meeting.date_start).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+              timeZone: "UTC",
+            })}
+          </span>
+        </div>
+        {meeting.meeting_official_name && meeting.meeting_official_name !== meeting.meeting_name && (
+          <div className="mt-2 text-xs text-f1-dim leading-relaxed bg-f1-bg3 rounded-lg p-3">
+            {meeting.meeting_official_name}
+          </div>
+        )}
+      </div>
+
+      {/* Session selector */}
+      <div className="flex flex-col gap-1.5">
+        {sortedSessions.map((s) => {
+          const isSelected = selectedSession?.session_key === s.session_key;
+          return (
+            <div
+              key={s.session_key}
+              onClick={() => setSelectedSession(s)}
+              className={`bg-f1-bg2 border rounded-lg px-4 py-3 flex justify-between items-center cursor-pointer transition-colors ${
+                isSelected
+                  ? "border-f1-blue bg-f1-bg3"
+                  : "border-f1-border hover:border-f1-blue hover:bg-f1-bg3"
+              }`}
+            >
+              <div>
+                <div className="text-xs font-semibold text-f1-bright">
+                  {s.session_name}
+                </div>
+                <div className="text-[11px] text-f1-dim">
+                  {SESSION_TYPE_LABELS[s.session_type] || s.session_type}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] text-f1-dim">
+                  {formatDate(s.date_start)}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Results */}
+      {loading && <div className="text-center py-4 text-f1-dim text-sm">Loading sessions...</div>}
+
+      {!loading && selectedSession && (
+        <>
+          {sessionHasResults && (
+            <SessionResults
+              results={results}
+              grid={grid}
+              sessionType={selectedSession.session_type}
+              sessionName={selectedSession.session_name}
+            />
+          )}
+
+          <LiveDataSections
+            sessionKey={selectedSession.session_key}
+            meetingKey={meeting.meeting_key}
+          />
+        </>
+      )}
+
+      {!loading && selectedSession && !sessionHasResults && (
+        <div className="bg-f1-bg2 border border-f1-border rounded-lg py-8 text-center text-f1-dim text-sm">
+          <div className="text-4xl mb-3 opacity-40" role="img" aria-label="empty">
+            📭
+          </div>
+          No results available for this session yet.
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+@theme {
+  --color-f1-bg: #0a0a0f;
+  --color-f1-bg2: #12121a;
+  --color-f1-bg3: #1a1a28;
+  --color-f1-bg4: #22223a;
+  --color-f1-border: #2a2a3e;
+  --color-f1-text: #e0e0f0;
+  --color-f1-dim: #8888aa;
+  --color-f1-bright: #ffffff;
+  --color-f1-red: #e10600;
+  --color-f1-green: #00c853;
+  --color-f1-yellow: #ffd600;
+  --color-f1-orange: #ff9100;
+  --color-f1-blue: #448aff;
+
+  --color-mclaren: #ff8700;
+  --color-redbull: #3671c6;
+  --color-ferrari: #dc0000;
+  --color-mercedes: #00d2be;
+  --color-astonmartin: #006f62;
+  --color-alpine: #ff87bc;
+  --color-williams: #005aff;
+  --color-haas: #b6b6b6;
+  --color-rb: #6692ff;
+  --color-audi: #d2ff00;
+  --color-cadillac: #8b0000;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 14px;
+}
+
+html, body, #root {
+  height: 100%;
+  background: var(--color-f1-bg);
+  color: var(--color-f1-text);
+  overflow-x: hidden;
+}
