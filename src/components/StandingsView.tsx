@@ -144,6 +144,28 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
         }
       }
 
+      // Fallback: if per-session driver data is sparse, fetch all drivers from the API
+      // (F1 driver numbers are career-long, so numbers are stable across seasons)
+      if (driverCache.size < 10) {
+        try {
+          const allDrivers = await getDrivers();
+          for (const d of allDrivers) {
+            if (!driverCache.has(d.driver_number)) {
+              driverCache.set(d.driver_number, {
+                broadcast_name: d.broadcast_name,
+                full_name: d.full_name,
+                team_name: d.team_name,
+                team_colour: d.team_colour,
+                country_code: d.country_code,
+                name_acronym: d.name_acronym,
+              });
+            }
+          }
+        } catch {
+          // fallback failed, driver names may show as "Driver #N"
+        }
+      }
+
       if (mounted) {
         dataCache.current = { key: cacheKey, results, drivers: driverCache };
         setResultsByMeeting(results);
