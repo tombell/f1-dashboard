@@ -41,16 +41,33 @@ pnpm build
 
 The dev server proxies `/v1/*` requests to `http://localhost:8000`, so it works out of the box with a local OpenF1 instance.
 
+### All Commands
+
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Development server with HMR on :5173 |
+| `pnpm build` | Production build to `dist/` |
+| `pnpm preview` | Vite preview of production build |
+| `pnpm serve` | Static server + API proxy on :8080 |
+| `pnpm lint` | Check linting with oxlint |
+| `pnpm lint:fix` | Auto-fix lint issues |
+| `pnpm fmt` | Format all source with oxfmt |
+| `pnpm fmt:check` | Check formatting |
+| `pnpm check` | Full lint + format + type check |
+
 ## Production Deployment
 
-The project includes a combined static file server + API proxy (`../server.py`) that serves the built files:
+A combined static file server + API proxy (`server.py`) serves the built files on a single port:
 
 ```bash
 # Build the app
 pnpm build
 
 # Start the proxy server (serves dist/ + proxies /v1/* to :8000)
-python3 ../server.py 8080
+pnpm serve
+
+# Or directly:
+python3 server.py 8080
 ```
 
 This serves everything on a single port — only one SSH tunnel needed:
@@ -133,9 +150,15 @@ The app uses Tailwind v4's `@theme` directive with F1-specific colours:
 pnpm dev       # HMR dev server on :5173
 pnpm build     # Production build → dist/
 pnpm preview   # Preview production build
-pnpm tsc       # TypeScript check only
+pnpm lint      # Check linting
+pnpm fmt       # Format source files
+pnpm check     # TypeScript + lint + format check
 ```
+
+All tools passed on the current codebase:
+- **oxlint** — 96 rules, 0 errors (9 unused-variable warnings, pre-existing)
+- **oxfmt** — Prettier-compatible Rust formatter, 16 files pass
 
 ## Porting Note
 
-This app replaces a pair of monolithic single-file HTML dashboards (`index.html` and `historical.html` at `~/workspace/openf1/dashboard/`). The old files remain in place as a fallback.
+This app replaces a pair of monolithic single-file HTML dashboards (`index.html` and `historical.html` that previously lived at `~/workspace/openf1/dashboard/`). The project now lives independently at `~/workspace/f1-dashboard/`.
