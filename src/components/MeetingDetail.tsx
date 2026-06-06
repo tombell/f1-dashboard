@@ -8,6 +8,7 @@ interface MeetingDetailProps {
   meeting: Meeting;
   onBack: () => void;
   sessionKey?: number;
+  onSessionSelect?: (session: Session) => void;
 }
 
 function countryFlag(countryCode: string): string {
@@ -43,6 +44,7 @@ export default function MeetingDetail({
   meeting,
   onBack,
   sessionKey: initialSessionKey,
+  onSessionSelect,
 }: MeetingDetailProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
@@ -170,7 +172,10 @@ export default function MeetingDetail({
           return (
             <div
               key={s.session_key}
-              onClick={() => setSelectedSession(s)}
+              onClick={() => {
+                setSelectedSession(s);
+                onSessionSelect?.(s);
+              }}
               className={`bg-f1-bg2 border rounded-lg px-4 py-3 flex justify-between items-center cursor-pointer transition-colors ${
                 isSelected
                   ? "border-f1-blue bg-f1-bg3"

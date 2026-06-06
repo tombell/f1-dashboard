@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import type { SessionResult } from "@/types/api";
 
 interface SessionResultsProps {
@@ -45,6 +45,8 @@ export default function SessionResults({
   const tableType = useMemo(() => detectTableType(results, sessionType), [results, sessionType]);
   const isSprint = sessionName.toLowerCase().includes("sprint");
   const segLabels = isSprint ? ["SQ1", "SQ2", "SQ3"] : ["Q1", "Q2", "Q3"];
+  const [resultsOpen, setResultsOpen] = useState(true);
+  const [gridOpen, setGridOpen] = useState(true);
 
   // Qualifying: find fastest time in each segment
   const segFastest = useMemo(() => {
@@ -71,73 +73,89 @@ export default function SessionResults({
     <>
       {/* Main results table */}
       <div className="bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden mt-1.5">
-        <div className="text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center">
+        <button
+          onClick={() => setResultsOpen((o) => !o)}
+          className="w-full text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center cursor-pointer bg-transparent border-t-0 border-x-0 hover:bg-f1-bg3 transition-colors"
+        >
           <span>{sessionName} Results</span>
-          <span className="text-f1-dim text-[11px]">{results.length} drivers</span>
-        </div>
+          <span className="flex items-center gap-2">
+            <span className="text-f1-dim text-[11px]">{results.length} drivers</span>
+            <span className={`transition-transform ${resultsOpen ? "rotate-0" : "-rotate-90"}`}>▼</span>
+          </span>
+        </button>
 
-        {tableType === "practice" && <PracticeTable results={sorted} />}
-        {tableType === "qualifying" && (
-          <QualifyingTable
-            results={sorted}
-            segLabels={segLabels}
-            segFastest={segFastest as Record<number, { time: number; driver_number: number }>}
-          />
+        {resultsOpen && (
+          <>
+            {tableType === "practice" && <PracticeTable results={sorted} />}
+            {tableType === "qualifying" && (
+              <QualifyingTable
+                results={sorted}
+                segLabels={segLabels}
+                segFastest={segFastest as Record<number, { time: number; driver_number: number }>}
+              />
+            )}
+            {tableType === "race" && <RaceTable results={sorted} />}
+          </>
         )}
-        {tableType === "race" && <RaceTable results={sorted} />}
       </div>
 
       {/* Starting grid */}
       {grid.length > 0 && (
         <div className="bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden mt-1.5">
-          <div className="text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border">
-            🏁 Starting Grid ({grid.length} drivers)
-          </div>
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-f1-bg3">
-                <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
-                  Pos
-                </th>
-                <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
-                  Driver
-                </th>
-                <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
-                  Lap Time
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...grid]
-                .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
-                .map((g) => (
-                  <tr
-                    key={`${g.driver_number}-${g.position}`}
-                    className={`border-b border-f1-border last:border-b-0 hover:bg-f1-bg3 ${
-                      g.position === 1 ? "bg-f1-bg3/50" : ""
-                    }`}
-                  >
-                    <td className={`px-3 py-2 text-xs font-bold ${posColor(g.position)}`}>
-                      P{g.position}
-                    </td>
-                    <td className="px-3 py-2 text-xs">
-                      <span
-                        style={{ color: g.team_colour ? `#${g.team_colour}` : undefined }}
-                        className="font-semibold"
-                      >
-                        {driverName(g)}
-                      </span>
-                      <span className="ml-1.5 text-[11px] text-f1-dim">· {g.team_name}</span>
-                    </td>
-                    <td className="px-3 py-2 text-xs text-f1-dim tabular-nums">
-                      {g.duration != null && typeof g.duration === "number"
-                        ? `${g.duration.toFixed(3)}s`
-                        : "-"}
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
+          <button
+            onClick={() => setGridOpen((o) => !o)}
+            className="w-full text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center cursor-pointer bg-transparent border-t-0 border-x-0 hover:bg-f1-bg3 transition-colors"
+          >
+            <span>🏁 Starting Grid ({grid.length} drivers)</span>
+            <span className={`transition-transform ${gridOpen ? "rotate-0" : "-rotate-90"}`}>▼</span>
+          </button>
+          {gridOpen && (
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-f1-bg3">
+                  <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
+                    Pos
+                  </th>
+                  <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
+                    Driver
+                  </th>
+                  <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
+                    Lap Time
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...grid]
+                  .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
+                  .map((g) => (
+                    <tr
+                      key={`${g.driver_number}-${g.position}`}
+                      className={`border-b border-f1-border last:border-b-0 hover:bg-f1-bg3 ${
+                        g.position === 1 ? "bg-f1-bg3/50" : ""
+                      }`}
+                    >
+                      <td className={`px-3 py-2 text-xs font-bold ${posColor(g.position)}`}>
+                        P{g.position}
+                      </td>
+                      <td className="px-3 py-2 text-xs">
+                        <span
+                          style={{ color: g.team_colour ? `#${g.team_colour}` : undefined }}
+                          className="font-semibold"
+                        >
+                          {driverName(g)}
+                        </span>
+                        <span className="ml-1.5 text-[11px] text-f1-dim">· {g.team_name}</span>
+                      </td>
+                      <td className="px-3 py-2 text-xs text-f1-dim tabular-nums">
+                        {g.duration != null && typeof g.duration === "number"
+                          ? `${g.duration.toFixed(3)}s`
+                          : "-"}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
     </>

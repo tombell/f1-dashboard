@@ -79,6 +79,15 @@ export default function HistoricalBrowser() {
     setSearchParams(params, { replace: true });
   }, [searchParams, setSearchParams]);
 
+  const handleSelectSession = useCallback(
+    (session: Session) => {
+      const params = new URLSearchParams(searchParams);
+      params.set("session", String(session.session_key));
+      setSearchParams(params, { replace: true });
+    },
+    [searchParams, setSearchParams],
+  );
+
   const handleYearChange = useCallback(
     (y: number) => {
       const params = new URLSearchParams(searchParams);
@@ -166,6 +175,7 @@ export default function HistoricalBrowser() {
               meeting={selectedMeeting}
               onBack={handleBack}
               sessionKey={sessionKey ? Number(sessionKey) : undefined}
+              onSessionSelect={handleSelectSession}
             />
           ) : (
             <MeetingCalendar meetings={meetings} onSelect={handleSelectMeeting} />
