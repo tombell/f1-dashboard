@@ -60,9 +60,14 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
 
       for (const m of raceMeetings) {
         try {
-          // Get sessions for this meeting to find the race
+          // Get sessions for this meeting to find the race and sprint
           const sessions = await getSessions(m.meeting_key);
-          const raceSession = sessions.find((s) => s.session_type === "Race");
+          const raceSession = sessions.find(
+            (s) => s.session_type === "Race" && s.session_name !== "Sprint",
+          );
+          const sprintSession = sessions.find((s) => s.session_name === "Sprint");
+
+          // Load main race results
           if (raceSession) {
             const sr = await getSessionResults(m.meeting_key, raceSession.session_key);
             results[m.meeting_key] = sr;
@@ -70,6 +75,32 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
             // Fetch driver info for this session and cache it
             const drivers = await getDrivers(raceSession.session_key);
             for (const d of drivers) {
+              if (!driverCache.has(d.driver_number)) {
+                driverCache.set(d.driver_number, {
+                  broadcast_name: d.broadcast_name,
+                  full_name: d.full_name,
+                  team_name: d.team_name,
+                  team_colour: d.team_colour,
+                  country_code: d.country_code,
+                  name_acronym: d.name_acronym,
+                });
+              }
+            }
+          }
+
+          // Also load sprint results and merge them in
+          if (sprintSession && sprintSession.session_key !== raceSession?.session_key) {
+            const sprintResults = await getSessionResults(m.meeting_key, sprintSession.session_key);
+            if (sprintResults.length > 0) {
+              results[m.meeting_key] = [
+                ...(results[m.meeting_key] || []),
+                ...sprintResults,
+              ];
+            }
+
+            // Fetch drivers from sprint session too (catches any not in race)
+            const sprintDrivers = await getDrivers(sprintSession.session_key);
+            for (const d of sprintDrivers) {
               if (!driverCache.has(d.driver_number)) {
                 driverCache.set(d.driver_number, {
                   broadcast_name: d.broadcast_name,
