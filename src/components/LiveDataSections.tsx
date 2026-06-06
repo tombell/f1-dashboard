@@ -74,7 +74,9 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
     };
 
     fetchLiveData();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [sessionKey]);
 
   // Process laps into per-driver summaries
@@ -91,16 +93,13 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
       const cleanLaps = driverLaps.filter((l) => l.lap_duration != null && !l.is_pit_out_lap);
       const fastest = cleanLaps.reduce(
         (best, l) => (l.lap_duration != null && l.lap_duration < best ? l.lap_duration : best),
-        Infinity
+        Infinity,
       );
       const avg =
         cleanLaps.length > 0
           ? cleanLaps.reduce((s, l) => s + (l.lap_duration ?? 0), 0) / cleanLaps.length
           : 0;
-      const topSpeed = Math.max(
-        ...driverLaps.map((l) => l.st_speed_trap ?? 0),
-        0
-      );
+      const topSpeed = Math.max(...driverLaps.map((l) => l.st_speed_trap ?? 0), 0);
       return {
         driver_number: dn,
         fastest: fastest !== Infinity ? fastest : null,
@@ -124,10 +123,7 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
 
   // Position changes per driver
   const posChanges = useMemo(() => {
-    const changes = new Map<
-      number,
-      { start: number | null; end: number | null }
-    >();
+    const changes = new Map<number, { start: number | null; end: number | null }>();
     for (const pos of positions) {
       if (!changes.has(pos.driver_number)) {
         changes.set(pos.driver_number, { start: null, end: null });
@@ -152,9 +148,7 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
 
   return (
     <div className="flex flex-col gap-3 mt-3">
-      <div className="text-xs text-f1-dim font-semibold uppercase tracking-wider">
-        📊 Live Data
-      </div>
+      <div className="text-xs text-f1-dim font-semibold uppercase tracking-wider">📊 Live Data</div>
 
       {/* Lap Times */}
       {hasLaps && (
@@ -178,8 +172,13 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
             </thead>
             <tbody>
               {lapSummaries.map((ls) => (
-                <tr key={ls.driver_number} className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3">
-                  <td className="px-3 py-2 text-xs font-semibold text-f1-bright">#{ls.driver_number}</td>
+                <tr
+                  key={ls.driver_number}
+                  className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3"
+                >
+                  <td className="px-3 py-2 text-xs font-semibold text-f1-bright">
+                    #{ls.driver_number}
+                  </td>
                   <td className="px-3 py-2 text-xs text-f1-green tabular-nums">
                     {ls.fastest ? `${ls.fastest.toFixed(3)}s` : "-"}
                   </td>
@@ -219,28 +218,33 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
               </tr>
             </thead>
             <tbody>
-              {pits.slice(-50).reverse().map((p, i) => (
-                <tr key={i} className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3">
-                  <td className="px-3 py-2 text-xs font-semibold text-f1-bright">#{p.driver_number}</td>
-                  <td className="px-3 py-2 text-xs">L{p.lap_number}</td>
-                  <td className="px-3 py-2 text-xs text-f1-dim">
-                    {p.pit_duration != null ? `${p.pit_duration.toFixed(1)}s` : "-"}
-                  </td>
-                  <td className="px-3 py-2 text-xs text-f1-dim">
-                    {p.stop_time != null ? `${p.stop_time.toFixed(1)}s` : "-"}
-                  </td>
-                  <td className="px-3 py-2 text-xs text-f1-dim">
-                    {p.lane_time != null ? `${p.lane_time.toFixed(1)}s` : "-"}
-                  </td>
-                  <td className="px-3 py-2 text-xs">
-                    {p.tyre_change ? (
-                      <span className="text-f1-yellow">Tyre change</span>
-                    ) : (
-                      <span className="text-f1-dim">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {pits
+                .slice(-50)
+                .reverse()
+                .map((p, i) => (
+                  <tr key={i} className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3">
+                    <td className="px-3 py-2 text-xs font-semibold text-f1-bright">
+                      #{p.driver_number}
+                    </td>
+                    <td className="px-3 py-2 text-xs">L{p.lap_number}</td>
+                    <td className="px-3 py-2 text-xs text-f1-dim">
+                      {p.pit_duration != null ? `${p.pit_duration.toFixed(1)}s` : "-"}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-f1-dim">
+                      {p.stop_time != null ? `${p.stop_time.toFixed(1)}s` : "-"}
+                    </td>
+                    <td className="px-3 py-2 text-xs text-f1-dim">
+                      {p.lane_time != null ? `${p.lane_time.toFixed(1)}s` : "-"}
+                    </td>
+                    <td className="px-3 py-2 text-xs">
+                      {p.tyre_change ? (
+                        <span className="text-f1-yellow">Tyre change</span>
+                      ) : (
+                        <span className="text-f1-dim">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </LiveSection>
@@ -268,25 +272,23 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
             <tbody>
               {[...stintsByDriver.entries()].map(([dn, driverStints]) =>
                 driverStints.map((s) => (
-                  <tr key={`${dn}-${s.stint_number}`} className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3">
+                  <tr
+                    key={`${dn}-${s.stint_number}`}
+                    className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3"
+                  >
                     <td className="px-3 py-2 text-xs font-semibold text-f1-bright">#{dn}</td>
                     <td className="px-3 py-2 text-xs text-f1-dim">{s.stint_number}</td>
                     <td className="px-3 py-2 text-xs">
                       L{s.lap_start}–{s.lap_end}
                     </td>
                     <td className="px-3 py-2 text-xs">
-                      <span
-                        className="font-semibold"
-                        style={{ color: compoundColor(s.compound) }}
-                      >
+                      <span className="font-semibold" style={{ color: compoundColor(s.compound) }}>
                         {s.compound || s.compound_visual || "-"}
                       </span>
                     </td>
-                    <td className="px-3 py-2 text-xs text-f1-dim">
-                      {s.tyre_age_at_start} laps
-                    </td>
+                    <td className="px-3 py-2 text-xs text-f1-dim">{s.tyre_age_at_start} laps</td>
                   </tr>
-                ))
+                )),
               )}
             </tbody>
           </table>
@@ -359,10 +361,12 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
               {[...posChanges.entries()]
                 .sort(([, a], [, b]) => (a.start ?? 99) - (b.start ?? 99))
                 .map(([dn, ch]) => {
-                  const net =
-                    ch.start != null && ch.end != null ? ch.start - ch.end : 0;
+                  const net = ch.start != null && ch.end != null ? ch.start - ch.end : 0;
                   return (
-                    <tr key={dn} className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3">
+                    <tr
+                      key={dn}
+                      className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3"
+                    >
                       <td className="px-3 py-2 text-xs font-semibold text-f1-bright">#{dn}</td>
                       <td className="px-3 py-2 text-xs text-f1-dim">
                         {ch.start != null ? `P${ch.start}` : "-"}
@@ -425,10 +429,7 @@ function LiveSection({
         className="text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center cursor-pointer select-none"
       >
         <span>
-          {title}{" "}
-          <span className="text-[11px] text-f1-dim font-normal">
-            ({count})
-          </span>
+          {title} <span className="text-[11px] text-f1-dim font-normal">({count})</span>
         </span>
         <span className="text-f1-dim text-[11px] hover:bg-f1-bg4 px-1.5 py-0.5 rounded transition-colors">
           {isCollapsed ? "▶" : "▼"}

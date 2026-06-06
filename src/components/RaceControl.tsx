@@ -65,9 +65,7 @@ export default function RaceControl({ sessionKey }: RaceControlProps) {
       </div>
       <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
         {messages.length === 0 && (
-          <div className="text-f1-dim text-xs text-center py-8">
-            No race control messages yet
-          </div>
+          <div className="text-f1-dim text-xs text-center py-8">No race control messages yet</div>
         )}
         {messages.map((msg, i) => (
           <div
@@ -77,9 +75,7 @@ export default function RaceControl({ sessionKey }: RaceControlProps) {
             <span className="text-f1-dim shrink-0 text-[11px]">
               {new Date(msg.date).toLocaleTimeString()}
             </span>
-            {msg.flag && (
-              <span className="text-base leading-none">{flagEmoji(msg.flag)}</span>
-            )}
+            {msg.flag && <span className="text-base leading-none">{flagEmoji(msg.flag)}</span>}
             <span className="text-f1-text">{msg.message}</span>
           </div>
         ))}

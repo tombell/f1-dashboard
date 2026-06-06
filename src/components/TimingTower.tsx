@@ -76,13 +76,9 @@ export default function TimingTower({ drivers, positions, intervals }: TimingTow
               className="flex px-3 py-2 text-xs border-b border-f1-border last:border-b-0 hover:bg-f1-bg3/50 transition-colors"
               style={{ borderLeft: `3px solid ${color}` }}
             >
-              <span className="w-[30px] font-bold text-f1-bright">
-                {pos?.position ?? "—"}
-              </span>
+              <span className="w-[30px] font-bold text-f1-bright">{pos?.position ?? "—"}</span>
               <span className="flex-1 flex items-center gap-2">
-                <span className="font-semibold text-f1-bright">
-                  {driver.name_acronym}
-                </span>
+                <span className="font-semibold text-f1-bright">{driver.name_acronym}</span>
                 <span className="text-f1-dim text-[11px]">{driver.team_name}</span>
               </span>
               <span className="w-[50px] text-right text-f1-orange">

@@ -39,8 +39,11 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
 
   // Sort meetings chronologically
   const sortedMeetings = useMemo(
-    () => [...meetings].sort((a, b) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime()),
-    [meetings]
+    () =>
+      [...meetings].sort(
+        (a, b) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime(),
+      ),
+    [meetings],
   );
 
   // Load race results for all meetings
@@ -48,9 +51,7 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
     let mounted = true;
     setLoading(true);
 
-    const raceMeetings = sortedMeetings.filter(
-      (m) => new Date(m.date_end).getTime() < Date.now()
-    );
+    const raceMeetings = sortedMeetings.filter((m) => new Date(m.date_end).getTime() < Date.now());
 
     const loadAll = async () => {
       const results: Record<number, SessionResult[]> = {};
@@ -59,9 +60,7 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
         try {
           // Get sessions for this meeting to find the race
           const sessions = await getSessions(m.meeting_key);
-          const raceSession = sessions.find(
-            (s) => s.session_type === "Race"
-          );
+          const raceSession = sessions.find((s) => s.session_type === "Race");
           if (raceSession) {
             const sr = await getSessionResults(m.meeting_key, raceSession.session_key);
             results[m.meeting_key] = sr;
@@ -78,31 +77,41 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
     };
 
     loadAll();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [sortedMeetings]);
 
   // Calculate standings
   const standings = useMemo(() => {
     const driverPoints = new Map<number, PointsEntry>();
 
-    const meetingsToInclude = selectedMeeting === "all"
-      ? sortedMeetings
-      : sortedMeetings.filter(
-          (m) => new Date(m.date_start).getTime() <=
-            new Date(sortedMeetings.find((sm) => sm.meeting_key === selectedMeeting)?.date_end || "").getTime()
-        );
+    const meetingsToInclude =
+      selectedMeeting === "all"
+        ? sortedMeetings
+        : sortedMeetings.filter(
+            (m) =>
+              new Date(m.date_start).getTime() <=
+              new Date(
+                sortedMeetings.find((sm) => sm.meeting_key === selectedMeeting)?.date_end || "",
+              ).getTime(),
+          );
 
     // Only include completed meetings up to selected point
     const completedMks = new Set(
       meetingsToInclude
         .filter((m) => new Date(m.date_end).getTime() < Date.now())
-        .map((m) => m.meeting_key)
+        .map((m) => m.meeting_key),
     );
 
     for (const [mk, results] of Object.entries(resultsByMeeting)) {
       const meetingKey = Number(mk);
       if (!completedMks.has(meetingKey)) continue;
-      if (selectedMeeting !== "all" && meetingKey !== selectedMeeting && !meetingsToInclude.some((m) => m.meeting_key === meetingKey))
+      if (
+        selectedMeeting !== "all" &&
+        meetingKey !== selectedMeeting &&
+        !meetingsToInclude.some((m) => m.meeting_key === meetingKey)
+      )
         continue;
 
       // Only include the last meeting up to selected
@@ -168,16 +177,12 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
   }, [resultsByMeeting, sortedMeetings, selectedMeeting]);
 
   if (loading) {
-    return (
-      <div className="text-center py-10 text-f1-dim text-sm">
-        Loading standings...
-      </div>
-    );
+    return <div className="text-center py-10 text-f1-dim text-sm">Loading standings...</div>;
   }
 
   // Use the actual completed meetings for the selector
   const completedMeetings = sortedMeetings.filter(
-    (m) => new Date(m.date_end).getTime() < Date.now()
+    (m) => new Date(m.date_end).getTime() < Date.now(),
   );
 
   return (
@@ -186,7 +191,9 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
         <span className="text-xs font-semibold text-f1-bright">Standings as of:</span>
         <select
           value={selectedMeeting === "all" ? "all" : String(selectedMeeting)}
-          onChange={(e) => setSelectedMeeting(e.target.value === "all" ? "all" : Number(e.target.value))}
+          onChange={(e) =>
+            setSelectedMeeting(e.target.value === "all" ? "all" : Number(e.target.value))
+          }
           className="bg-f1-bg3 border border-f1-border rounded-md px-2.5 py-1.5 text-f1-bright text-xs font-semibold cursor-pointer outline-none focus:border-f1-red font-mono"
         >
           <option value="all">All completed races</option>
@@ -210,9 +217,7 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
             key={driver.driver_number}
             className="bg-f1-bg2 border border-f1-border rounded-lg p-3.5 flex items-center gap-3"
           >
-            <div className={`text-xl font-bold w-10 text-center ${posCls(idx)}`}>
-              {idx + 1}
-            </div>
+            <div className={`text-xl font-bold w-10 text-center ${posCls(idx)}`}>{idx + 1}</div>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold text-f1-bright truncate">
                 {driver.broadcast_name || driver.full_name}
@@ -222,11 +227,7 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
                 style={driver.team_colour ? { color: `#${driver.team_colour}` } : undefined}
               >
                 {driver.team_name}
-                {driver.wins > 0 && (
-                  <span className="text-f1-yellow ml-2">
-                    🏆 {driver.wins}
-                  </span>
-                )}
+                {driver.wins > 0 && <span className="text-f1-yellow ml-2">🏆 {driver.wins}</span>}
               </div>
             </div>
             <div className="text-right">

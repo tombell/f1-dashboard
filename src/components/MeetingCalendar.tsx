@@ -62,16 +62,12 @@ export default function MeetingCalendar({ meetings, onSelect }: MeetingCalendarP
             onClick={() => onSelect(meeting)}
             className="bg-f1-bg2 border border-f1-border rounded-lg p-3.5 cursor-pointer transition-all hover:bg-f1-bg3 hover:border-f1-red hover:-translate-y-px relative overflow-hidden"
           >
-            <span className="absolute right-3 top-3 text-3xl leading-none opacity-60">
-              {flag}
-            </span>
+            <span className="absolute right-3 top-3 text-3xl leading-none opacity-60">{flag}</span>
 
             <div className="text-sm font-semibold text-f1-bright mb-1 pr-12">
               {meeting.meeting_name}
             </div>
-            <div className="text-xs text-f1-dim">
-              {meeting.circuit_short_name}
-            </div>
+            <div className="text-xs text-f1-dim">{meeting.circuit_short_name}</div>
             <div className="text-[11px] text-f1-dim mt-1.5">
               {formatDateRange(meeting.date_start, meeting.date_end)}
             </div>

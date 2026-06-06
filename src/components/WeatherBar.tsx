@@ -27,9 +27,7 @@ function Stat({ label, value, highlight }: { label: string; value: string; highl
   return (
     <span className="flex items-center gap-1.5 whitespace-nowrap">
       <span className="text-f1-dim">{label}</span>
-      <span className={`text-f1-bright font-semibold ${highlight ?? ""}`}>
-        {value}
-      </span>
+      <span className={`text-f1-bright font-semibold ${highlight ?? ""}`}>{value}</span>
     </span>
   );
 }

@@ -80,9 +80,7 @@ export default function Header({ session, onRefresh }: HeaderProps) {
               </span>
             )}
             {countdown && (
-              <span className="text-f1-red font-semibold min-w-[80px] text-right">
-                {countdown}
-              </span>
+              <span className="text-f1-red font-semibold min-w-[80px] text-right">{countdown}</span>
             )}
           </>
         )}

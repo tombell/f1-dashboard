@@ -45,8 +45,8 @@ export interface SessionResult {
   lap_count?: number;
   time?: string;
   duration?: number | number[]; // number for race/practice, [Q1, Q2, Q3] for qualifying
-  gap?: string;             // gap to leader formatted string
-  interval?: string;        // interval to prev driver
+  gap?: string; // gap to leader formatted string
+  interval?: string; // interval to prev driver
   points?: number;
   classified?: string;
   status?: string;

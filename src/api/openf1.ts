@@ -34,7 +34,9 @@ export async function getSessions(meetingKey?: number, year?: number) {
 }
 
 export async function getSession(sessionKey: number) {
-  const results = await fetchJson<import("../types/api").Session[]>(`/sessions?session_key=${sessionKey}`);
+  const results = await fetchJson<import("../types/api").Session[]>(
+    `/sessions?session_key=${sessionKey}`,
+  );
   return results[0] || null;
 }
 
@@ -99,7 +101,9 @@ export async function getWeather(sessionKey: number) {
 
 // Race Control
 export async function getRaceControl(sessionKey: number) {
-  return fetchJson<import("../types/api").RaceControlMessage[]>(`/race_control?session_key=${sessionKey}`);
+  return fetchJson<import("../types/api").RaceControlMessage[]>(
+    `/race_control?session_key=${sessionKey}`,
+  );
 }
 
 // Championship Drivers

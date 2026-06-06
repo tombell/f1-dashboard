@@ -37,7 +37,9 @@ export default function HistoricalBrowser() {
       .finally(() => {
         if (mounted) setLoading(false);
       });
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [year]);
 
   // Check for deep-link meeting/session
@@ -66,7 +68,7 @@ export default function HistoricalBrowser() {
       params.delete("session");
       setSearchParams(params, { replace: true });
     },
-    [searchParams, setSearchParams]
+    [searchParams, setSearchParams],
   );
 
   const handleBack = useCallback(() => {
@@ -86,7 +88,7 @@ export default function HistoricalBrowser() {
       setSelectedMeeting(null);
       setSearchParams(params, { replace: true });
     },
-    [searchParams, setSearchParams]
+    [searchParams, setSearchParams],
   );
 
   const handleViewChange = useCallback(
@@ -102,7 +104,7 @@ export default function HistoricalBrowser() {
       setSelectedMeeting(null);
       setSearchParams(params, { replace: true });
     },
-    [searchParams, setSearchParams]
+    [searchParams, setSearchParams],
   );
 
   const currentYear = new Date().getFullYear();
@@ -155,9 +157,7 @@ export default function HistoricalBrowser() {
         </div>
       )}
 
-      {loading && (
-        <div className="text-center py-8 text-f1-dim text-sm">Loading...</div>
-      )}
+      {loading && <div className="text-center py-8 text-f1-dim text-sm">Loading...</div>}
 
       {!loading && view === "races" && (
         <>
@@ -168,17 +168,12 @@ export default function HistoricalBrowser() {
               sessionKey={sessionKey ? Number(sessionKey) : undefined}
             />
           ) : (
-            <MeetingCalendar
-              meetings={meetings}
-              onSelect={handleSelectMeeting}
-            />
+            <MeetingCalendar meetings={meetings} onSelect={handleSelectMeeting} />
           )}
         </>
       )}
 
-      {!loading && view === "standings" && (
-        <StandingsView meetings={meetings} year={year} />
-      )}
+      {!loading && view === "standings" && <StandingsView meetings={meetings} year={year} />}
     </div>
   );
 }

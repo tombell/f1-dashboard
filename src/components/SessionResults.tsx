@@ -36,7 +36,12 @@ function detectTableType(results: SessionResult[], sessionType: string): TableTy
   return "practice";
 }
 
-export default function SessionResults({ results, grid, sessionType, sessionName }: SessionResultsProps) {
+export default function SessionResults({
+  results,
+  grid,
+  sessionType,
+  sessionName,
+}: SessionResultsProps) {
   const tableType = useMemo(() => detectTableType(results, sessionType), [results, sessionType]);
   const isSprint = sessionName.toLowerCase().includes("sprint");
   const segLabels = isSprint ? ["SQ1", "SQ2", "SQ3"] : ["Q1", "Q2", "Q3"];
@@ -116,7 +121,10 @@ export default function SessionResults({ results, grid, sessionType, sessionName
                       P{g.position}
                     </td>
                     <td className="px-3 py-2 text-xs">
-                      <span style={{ color: g.team_colour ? `#${g.team_colour}` : undefined }} className="font-semibold">
+                      <span
+                        style={{ color: g.team_colour ? `#${g.team_colour}` : undefined }}
+                        className="font-semibold"
+                      >
                         {driverName(g)}
                       </span>
                       <span className="ml-1.5 text-[11px] text-f1-dim">· {g.team_name}</span>
@@ -147,11 +155,21 @@ function PracticeTable({ results }: { results: SessionResult[] }) {
     <table className="w-full border-collapse">
       <thead>
         <tr className="bg-f1-bg3">
-          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">Pos</th>
-          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">Driver</th>
-          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">Laps</th>
-          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">Best Lap</th>
-          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">Gap</th>
+          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
+            Pos
+          </th>
+          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
+            Driver
+          </th>
+          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
+            Laps
+          </th>
+          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
+            Best Lap
+          </th>
+          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
+            Gap
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -164,7 +182,10 @@ function PracticeTable({ results }: { results: SessionResult[] }) {
           >
             <td className={`px-3 py-2 text-xs font-bold ${posColor(r.position)}`}>P{r.position}</td>
             <td className="px-3 py-2 text-xs">
-              <span style={{ color: r.team_colour ? `#${r.team_colour}` : undefined }} className="font-semibold">
+              <span
+                style={{ color: r.team_colour ? `#${r.team_colour}` : undefined }}
+                className="font-semibold"
+              >
                 {driverName(r)}
               </span>
             </td>
@@ -206,7 +227,9 @@ function QualifyingTable({
     <table className="w-full border-collapse">
       <thead>
         <tr className="bg-f1-bg3">
-          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">Pos</th>
+          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
+            Pos
+          </th>
           <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
             Driver {flHeader && <span className="font-normal text-[11px]">· {flHeader}</span>}
           </th>
@@ -219,7 +242,9 @@ function QualifyingTable({
           <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
             {segLabels[2]}
           </th>
-          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">Laps</th>
+          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
+            Laps
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -233,7 +258,8 @@ function QualifyingTable({
                 className="text-f1-orange font-bold text-[11px]"
                 title={`Fastest ${segLabels[i]}`}
               >
-                {" "}🏁 {segLabels[i]}
+                {" "}
+                🏁 {segLabels[i]}
               </span>
             ));
 
@@ -244,9 +270,14 @@ function QualifyingTable({
                 r.position === 1 ? "bg-f1-bg3/50" : ""
               }`}
             >
-              <td className={`px-3 py-2 text-xs font-bold ${posColor(r.position)}`}>P{r.position}</td>
+              <td className={`px-3 py-2 text-xs font-bold ${posColor(r.position)}`}>
+                P{r.position}
+              </td>
               <td className="px-3 py-2 text-xs">
-                <span style={{ color: r.team_colour ? `#${r.team_colour}` : undefined }} className="font-semibold">
+                <span
+                  style={{ color: r.team_colour ? `#${r.team_colour}` : undefined }}
+                  className="font-semibold"
+                >
                   {driverName(r)}
                 </span>
                 {badges}
@@ -256,7 +287,8 @@ function QualifyingTable({
                   {t[i] != null ? (
                     <span
                       className={
-                        segFastest[i]?.driver_number === r.driver_number && t[i] === segFastest[i]?.time
+                        segFastest[i]?.driver_number === r.driver_number &&
+                        t[i] === segFastest[i]?.time
                           ? "text-f1-orange font-bold"
                           : "text-f1-dim"
                       }
@@ -282,11 +314,21 @@ function RaceTable({ results }: { results: SessionResult[] }) {
     <table className="w-full border-collapse">
       <thead>
         <tr className="bg-f1-bg3">
-          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">Pos</th>
-          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">Driver</th>
-          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">Laps</th>
-          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">Time</th>
-          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">Gap</th>
+          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
+            Pos
+          </th>
+          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
+            Driver
+          </th>
+          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
+            Laps
+          </th>
+          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
+            Time
+          </th>
+          <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
+            Gap
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -295,7 +337,8 @@ function RaceTable({ results }: { results: SessionResult[] }) {
           const isDNS = r.status === "DNS" || r.classified === "DNS";
           const isDSQ = r.status === "DSQ" || r.classified === "DSQ";
           const statusLabel = isDNF ? "DNF" : isDNS ? "DNS" : isDSQ ? "DSQ" : null;
-          const time = r.duration != null && !Array.isArray(r.duration) ? raceTime(r.duration as number) : "-";
+          const time =
+            r.duration != null && !Array.isArray(r.duration) ? raceTime(r.duration as number) : "-";
 
           return (
             <tr
@@ -306,10 +349,15 @@ function RaceTable({ results }: { results: SessionResult[] }) {
             >
               <td className={`px-3 py-2 text-xs font-bold ${posColor(r.position)}`}>
                 P{r.position}
-                {statusLabel && <span className="text-f1-red text-[10px] font-semibold ml-1">{statusLabel}</span>}
+                {statusLabel && (
+                  <span className="text-f1-red text-[10px] font-semibold ml-1">{statusLabel}</span>
+                )}
               </td>
               <td className="px-3 py-2 text-xs">
-                <span style={{ color: r.team_colour ? `#${r.team_colour}` : undefined }} className="font-semibold">
+                <span
+                  style={{ color: r.team_colour ? `#${r.team_colour}` : undefined }}
+                  className="font-semibold"
+                >
                   {driverName(r)}
                 </span>
               </td>

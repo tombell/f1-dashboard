@@ -35,11 +35,13 @@
 }
 
 :root {
-  font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-family: "SF Mono", "Cascadia Code", "Consolas", monospace;
   font-size: 14px;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   background: var(--color-f1-bg);
   color: var(--color-f1-text);

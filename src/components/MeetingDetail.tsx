@@ -1,11 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import SessionResults from "@/components/SessionResults";
 import LiveDataSections from "@/components/LiveDataSections";
-import {
-  getSessions,
-  getSessionResults,
-  getStartingGrid,
-} from "@/api/openf1";
+import { getSessions, getSessionResults, getStartingGrid } from "@/api/openf1";
 import type { Meeting, Session, SessionResult } from "@/types/api";
 
 interface MeetingDetailProps {
@@ -19,7 +15,7 @@ function countryFlag(countryCode: string): string {
   const offset = 0x1f1e6 - 65;
   return String.fromCodePoint(
     countryCode.charCodeAt(0) + offset,
-    countryCode.charCodeAt(1) + offset
+    countryCode.charCodeAt(1) + offset,
   );
 }
 
@@ -43,7 +39,11 @@ function formatDate(dateStr: string): string {
   });
 }
 
-export default function MeetingDetail({ meeting, onBack, sessionKey: initialSessionKey }: MeetingDetailProps) {
+export default function MeetingDetail({
+  meeting,
+  onBack,
+  sessionKey: initialSessionKey,
+}: MeetingDetailProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [results, setResults] = useState<SessionResult[]>([]);
@@ -52,8 +52,11 @@ export default function MeetingDetail({ meeting, onBack, sessionKey: initialSess
 
   // Sort sessions by date
   const sortedSessions = useMemo(
-    () => [...sessions].sort((a, b) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime()),
-    [sessions]
+    () =>
+      [...sessions].sort(
+        (a, b) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime(),
+      ),
+    [sessions],
   );
 
   const flag = countryFlag(meeting.country_code);
@@ -87,7 +90,9 @@ export default function MeetingDetail({ meeting, onBack, sessionKey: initialSess
         if (mounted) setLoading(false);
       });
 
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [meeting.meeting_key, initialSessionKey]);
 
   // Load results when a session is selected
@@ -110,11 +115,15 @@ export default function MeetingDetail({ meeting, onBack, sessionKey: initialSess
         setGrid([]);
       });
 
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [selectedSession, meeting.meeting_key]);
 
   const sessionHasResults = results.length > 0;
-  const isQualifying = selectedSession?.session_type === "Qualifying" || selectedSession?.session_type === "SprintQualifying";
+  const isQualifying =
+    selectedSession?.session_type === "Qualifying" ||
+    selectedSession?.session_type === "SprintQualifying";
   const isRace = selectedSession?.session_type === "Race";
   const isPractice = selectedSession?.session_type === "Practice";
 
@@ -133,9 +142,12 @@ export default function MeetingDetail({ meeting, onBack, sessionKey: initialSess
         </h2>
         <div className="text-xs text-f1-dim mt-1 flex gap-4 flex-wrap">
           <span>📍 {meeting.circuit_short_name}</span>
-          <span>📍 {meeting.location}, {meeting.country_name}</span>
           <span>
-            📅 {new Date(meeting.date_start).toLocaleDateString("en-GB", {
+            📍 {meeting.location}, {meeting.country_name}
+          </span>
+          <span>
+            📅{" "}
+            {new Date(meeting.date_start).toLocaleDateString("en-GB", {
               day: "numeric",
               month: "long",
               year: "numeric",
@@ -143,11 +155,12 @@ export default function MeetingDetail({ meeting, onBack, sessionKey: initialSess
             })}
           </span>
         </div>
-        {meeting.meeting_official_name && meeting.meeting_official_name !== meeting.meeting_name && (
-          <div className="mt-2 text-xs text-f1-dim leading-relaxed bg-f1-bg3 rounded-lg p-3">
-            {meeting.meeting_official_name}
-          </div>
-        )}
+        {meeting.meeting_official_name &&
+          meeting.meeting_official_name !== meeting.meeting_name && (
+            <div className="mt-2 text-xs text-f1-dim leading-relaxed bg-f1-bg3 rounded-lg p-3">
+              {meeting.meeting_official_name}
+            </div>
+          )}
       </div>
 
       {/* Session selector */}
@@ -165,17 +178,13 @@ export default function MeetingDetail({ meeting, onBack, sessionKey: initialSess
               }`}
             >
               <div>
-                <div className="text-xs font-semibold text-f1-bright">
-                  {s.session_name}
-                </div>
+                <div className="text-xs font-semibold text-f1-bright">{s.session_name}</div>
                 <div className="text-[11px] text-f1-dim">
                   {SESSION_TYPE_LABELS[s.session_type] || s.session_type}
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-[11px] text-f1-dim">
-                  {formatDate(s.date_start)}
-                </span>
+                <span className="text-[11px] text-f1-dim">{formatDate(s.date_start)}</span>
               </div>
             </div>
           );
