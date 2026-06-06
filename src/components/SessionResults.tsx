@@ -206,6 +206,7 @@ function PracticeTable({ results }: { results: SessionResult[] }) {
               >
                 {driverName(r)}
               </span>
+              <span className="ml-1.5 text-[11px] text-f1-dim">· {r.team_name}</span>
             </td>
             <td className="px-3 py-2 text-xs">{r.lap_count ?? "-"}</td>
             <td className="px-3 py-2 text-xs text-f1-dim tabular-nums">
@@ -298,6 +299,7 @@ function QualifyingTable({
                 >
                   {driverName(r)}
                 </span>
+                <span className="ml-1.5 text-[11px] text-f1-dim">· {r.team_name}</span>
                 {badges}
               </td>
               {[0, 1, 2].map((i) => (
@@ -378,6 +380,7 @@ function RaceTable({ results }: { results: SessionResult[] }) {
                 >
                   {driverName(r)}
                 </span>
+                <span className="ml-1.5 text-[11px] text-f1-dim">· {r.team_name}</span>
               </td>
               <td className="px-3 py-2 text-xs">{r.lap_count ?? "-"}</td>
               <td className="px-3 py-2 text-xs text-f1-dim tabular-nums">{time}</td>

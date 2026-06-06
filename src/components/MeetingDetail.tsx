@@ -111,12 +111,14 @@ export default function MeetingDetail({
         ]);
         if (!mounted) return;
 
-        // Build driver name lookup
-        const nameMap = new Map<number, { broadcast_name: string; full_name: string }>();
+        // Build driver name/team lookup
+        const nameMap = new Map<number, { broadcast_name: string; full_name: string; team_name: string; team_colour: string }>();
         for (const d of drivers) {
           nameMap.set(d.driver_number, {
             broadcast_name: d.broadcast_name,
             full_name: d.full_name,
+            team_name: d.team_name,
+            team_colour: d.team_colour,
           });
         }
 
@@ -129,6 +131,8 @@ export default function MeetingDetail({
                 nameMap.set(d.driver_number, {
                   broadcast_name: d.broadcast_name,
                   full_name: d.full_name,
+                  team_name: d.team_name,
+                  team_colour: d.team_colour,
                 });
               }
             }
@@ -137,7 +141,7 @@ export default function MeetingDetail({
           }
         }
 
-        // Enrich results with driver names
+        // Enrich results with driver names and teams
         const enrich = (arr: SessionResult[]) =>
           arr.map((r) => {
             const info = nameMap.get(r.driver_number);
@@ -146,6 +150,8 @@ export default function MeetingDetail({
                 ...r,
                 broadcast_name: r.broadcast_name || info.broadcast_name,
                 full_name: r.full_name || info.full_name,
+                team_name: r.team_name || info.team_name,
+                team_colour: r.team_colour || info.team_colour,
               };
             }
             return r;
