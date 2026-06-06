@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { getSessionResults, getSessions } from "@/api/openf1";
+import { getSessionResults, getSessions, getDrivers } from "@/api/openf1";
 import type { Meeting, Session, SessionResult } from "@/types/api";
 
 interface StandingsViewProps {
@@ -30,6 +30,7 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
   const [resultsByMeeting, setResultsByMeeting] = useState<Record<number, SessionResult[]>>({});
   const [loading, setLoading] = useState(true);
   const [selectedMeeting, setSelectedMeeting] = useState<number | "all">("all");
+  const [driverLookup, setDriverLookup] = useState<Map<number, { broadcast_name: string; full_name: string; team_name: string; team_colour: string; country_code: string; name_acronym: string }>>(new Map());
 
   // Get all race sessions for this year
   const raceSessions = useMemo(() => {
@@ -46,7 +47,7 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
     [meetings],
   );
 
-  // Load race results for all meetings
+  // Load race results + driver info for all meetings
   useEffect(() => {
     let mounted = true;
     setLoading(true);
@@ -55,6 +56,7 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
 
     const loadAll = async () => {
       const results: Record<number, SessionResult[]> = {};
+      const driverCache = new Map<number, { broadcast_name: string; full_name: string; team_name: string; team_colour: string; country_code: string; name_acronym: string }>();
 
       for (const m of raceMeetings) {
         try {
@@ -64,6 +66,21 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
           if (raceSession) {
             const sr = await getSessionResults(m.meeting_key, raceSession.session_key);
             results[m.meeting_key] = sr;
+
+            // Fetch driver info for this session and cache it
+            const drivers = await getDrivers(raceSession.session_key);
+            for (const d of drivers) {
+              if (!driverCache.has(d.driver_number)) {
+                driverCache.set(d.driver_number, {
+                  broadcast_name: d.broadcast_name,
+                  full_name: d.full_name,
+                  team_name: d.team_name,
+                  team_colour: d.team_colour,
+                  country_code: d.country_code,
+                  name_acronym: d.name_acronym,
+                });
+              }
+            }
           }
         } catch {
           // skip failed meetings
@@ -72,6 +89,7 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
 
       if (mounted) {
         setResultsByMeeting(results);
+        setDriverLookup(driverCache);
         setLoading(false);
       }
     };
@@ -127,13 +145,14 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
           existing.points += r.points ?? pts;
           if (r.position === 1) existing.wins++;
         } else {
+          const di = driverLookup.get(r.driver_number);
           driverPoints.set(r.driver_number, {
             driver_number: r.driver_number,
-            broadcast_name: r.broadcast_name,
-            full_name: r.full_name,
-            team_name: r.team_name,
-            team_colour: r.team_colour,
-            country_code: r.country_code,
+            broadcast_name: di?.broadcast_name ?? `Driver #${r.driver_number}`,
+            full_name: di?.full_name ?? `Driver #${r.driver_number}`,
+            team_name: di?.team_name ?? "",
+            team_colour: di?.team_colour ?? "",
+            country_code: di?.country_code ?? "",
             points: r.points ?? pts,
             wins: r.position === 1 ? 1 : 0,
           });
@@ -157,13 +176,14 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
             existing.points += pts;
             if (r.position === 1) existing.wins++;
           } else {
+            const di = driverLookup.get(r.driver_number);
             driverPoints.set(r.driver_number, {
               driver_number: r.driver_number,
-              broadcast_name: r.broadcast_name,
-              full_name: r.full_name,
-              team_name: r.team_name,
-              team_colour: r.team_colour,
-              country_code: r.country_code,
+              broadcast_name: di?.broadcast_name ?? `Driver #${r.driver_number}`,
+              full_name: di?.full_name ?? `Driver #${r.driver_number}`,
+              team_name: di?.team_name ?? "",
+              team_colour: di?.team_colour ?? "",
+              country_code: di?.country_code ?? "",
               points: pts,
               wins: r.position === 1 ? 1 : 0,
             });
@@ -174,7 +194,7 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
     }
 
     return [...driverPoints.values()].sort((a, b) => b.points - a.points);
-  }, [resultsByMeeting, sortedMeetings, selectedMeeting]);
+  }, [resultsByMeeting, sortedMeetings, selectedMeeting, driverLookup]);
 
   if (loading) {
     return <div className="text-center py-10 text-f1-dim text-sm">Loading standings...</div>;
