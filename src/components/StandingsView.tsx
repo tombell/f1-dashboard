@@ -138,7 +138,7 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
       for (const r of results) {
         if (r.position == null) continue;
         const pts = calcPoints(r.position);
-        if (pts === 0 && !r.points) continue;
+        if (pts === 0 && r.points == null) continue;
 
         const existing = driverPoints.get(r.driver_number);
         if (existing) {
