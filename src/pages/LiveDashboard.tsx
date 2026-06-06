@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import Header from "@/components/Header";
 import WeatherBar from "@/components/WeatherBar";
@@ -15,6 +15,7 @@ export default function LiveDashboard() {
   const [weather, setWeather] = useState<WeatherReading[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
+  const driverFallback = useRef<Map<number, Driver> | null>(null);
 
   const sessionKey = searchParams.get("session") ? Number(searchParams.get("session")) : undefined;
 
@@ -32,12 +33,43 @@ export default function LiveDashboard() {
           setSession(sess);
 
           const sk = sess.session_key;
-          const [d, p, i, w] = await Promise.all([
+          let [d, p, i, w] = await Promise.all([
             getDrivers(sk),
             getPositions(sk),
             getIntervals(sk),
             getWeather(sk),
           ]);
+
+          // Enrich sparse driver data with fallback driver registry
+          if (d.length < 10) {
+            if (!driverFallback.current) {
+              try {
+                const allDrivers = await getDrivers();
+                driverFallback.current = new Map();
+                for (const dr of allDrivers) {
+                  if (!driverFallback.current.has(dr.driver_number)) {
+                    driverFallback.current.set(dr.driver_number, dr);
+                  }
+                }
+              } catch {
+                // fallback failed
+              }
+            }
+            if (driverFallback.current) {
+              d = d.map((dr) => {
+                const fb = driverFallback.current!.get(dr.driver_number);
+                if (fb) {
+                  dr.broadcast_name = dr.broadcast_name || fb.broadcast_name;
+                  dr.full_name = dr.full_name || fb.full_name;
+                  dr.team_name = dr.team_name || fb.team_name;
+                  dr.team_colour = dr.team_colour || fb.team_colour;
+                  dr.name_acronym = dr.name_acronym || fb.name_acronym;
+                }
+                return dr;
+              });
+            }
+          }
+
           if (!mounted) return;
           setDrivers(d);
           setPositions(p);
