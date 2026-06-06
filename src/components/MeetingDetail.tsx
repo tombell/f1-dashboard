@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import SessionResults from "@/components/SessionResults";
 import LiveDataSections from "@/components/LiveDataSections";
-import { getSessions, getSessionResults, getStartingGrid } from "@/api/openf1";
+import { getSessions, getSessionResults, getStartingGrid, getDrivers } from "@/api/openf1";
 import type { Meeting, Session, SessionResult } from "@/types/api";
 
 interface MeetingDetailProps {
@@ -102,20 +102,65 @@ export default function MeetingDetail({
     if (!selectedSession) return;
     let mounted = true;
 
-    Promise.all([
-      getSessionResults(meeting.meeting_key, selectedSession.session_key),
-      getStartingGrid(meeting.meeting_key, selectedSession.session_key),
-    ])
-      .then(([sr, sg]) => {
+    const loadResults = async () => {
+      try {
+        const [sr, sg, drivers] = await Promise.all([
+          getSessionResults(meeting.meeting_key, selectedSession.session_key),
+          getStartingGrid(meeting.meeting_key, selectedSession.session_key),
+          getDrivers(selectedSession.session_key),
+        ]);
         if (!mounted) return;
-        setResults(sr);
-        setGrid(sg);
-      })
-      .catch(() => {
+
+        // Build driver name lookup
+        const nameMap = new Map<number, { broadcast_name: string; full_name: string }>();
+        for (const d of drivers) {
+          nameMap.set(d.driver_number, {
+            broadcast_name: d.broadcast_name,
+            full_name: d.full_name,
+          });
+        }
+
+        // If driver data is empty for this session, fall back to all-driver registry
+        if (nameMap.size < 10) {
+          try {
+            const allDrivers = await getDrivers();
+            for (const d of allDrivers) {
+              if (!nameMap.has(d.driver_number)) {
+                nameMap.set(d.driver_number, {
+                  broadcast_name: d.broadcast_name,
+                  full_name: d.full_name,
+                });
+              }
+            }
+          } catch {
+            // fallback failed
+          }
+        }
+
+        // Enrich results with driver names
+        const enrich = (arr: SessionResult[]) =>
+          arr.map((r) => {
+            const info = nameMap.get(r.driver_number);
+            if (info) {
+              return {
+                ...r,
+                broadcast_name: r.broadcast_name || info.broadcast_name,
+                full_name: r.full_name || info.full_name,
+              };
+            }
+            return r;
+          });
+
+        setResults(enrich(sr));
+        setGrid(enrich(sg));
+      } catch {
         if (!mounted) return;
         setResults([]);
         setGrid([]);
-      });
+      }
+    };
+
+    loadResults();
 
     return () => {
       mounted = false;
