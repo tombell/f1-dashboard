@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { getSessionResults, getSessions, getDrivers } from "@/api/openf1";
 import type { Meeting, Session, SessionResult } from "@/types/api";
 
@@ -18,25 +18,86 @@ interface PointsEntry {
   wins: number;
 }
 
+interface DriverInfo {
+  broadcast_name: string;
+  full_name: string;
+  team_name: string;
+  team_colour: string;
+  country_code: string;
+  name_acronym: string;
+}
+
 const POINTS_SYSTEM = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
+const BATCH_SIZE = 5;
 
 function calcPoints(position: number | null, hasFastestLap?: boolean): number {
   if (position == null) return 0;
   const base = POINTS_SYSTEM[position - 1] || 0;
-  return base; // fastest lap bonus not in data
+  return base;
+}
+
+type LoadResult = {
+  results: SessionResult[];
+  drivers: Map<number, DriverInfo>;
+} | null;
+
+async function loadMeeting(mk: number): Promise<LoadResult> {
+  try {
+    const sessions = await getSessions(mk);
+    const raceSession = sessions.find(
+      (s) => s.session_type === "Race" && s.session_name !== "Sprint",
+    );
+    const sprintSession = sessions.find((s) => s.session_name === "Sprint");
+
+    // Fetch race + sprint results in parallel
+    const [raceSr, sprintSr] = await Promise.all([
+      raceSession ? getSessionResults(mk, raceSession.session_key) : Promise.resolve([] as SessionResult[]),
+      sprintSession && sprintSession.session_key !== raceSession?.session_key
+        ? getSessionResults(mk, sprintSession.session_key)
+        : Promise.resolve([] as SessionResult[]),
+    ]);
+
+    // Fetch drivers from both relevant sessions in parallel
+    const driverPromises: Promise<import("@/types/api").Driver[]>[] = [];
+    if (raceSession) driverPromises.push(getDrivers(raceSession.session_key));
+    if (sprintSession && sprintSession.session_key !== raceSession?.session_key)
+      driverPromises.push(getDrivers(sprintSession.session_key));
+    const driverArrays = await Promise.all(driverPromises);
+
+    const allResults: SessionResult[] = [...raceSr, ...sprintSr];
+    const driverMap = new Map<number, DriverInfo>();
+
+    for (const drivers of driverArrays) {
+      for (const d of drivers) {
+        if (!driverMap.has(d.driver_number)) {
+          driverMap.set(d.driver_number, {
+            broadcast_name: d.broadcast_name,
+            full_name: d.full_name,
+            team_name: d.team_name,
+            team_colour: d.team_colour,
+            country_code: d.country_code,
+            name_acronym: d.name_acronym,
+          });
+        }
+      }
+    }
+
+    return { results: allResults, drivers: driverMap };
+  } catch {
+    return null;
+  }
 }
 
 export default function StandingsView({ meetings, year }: StandingsViewProps) {
   const [resultsByMeeting, setResultsByMeeting] = useState<Record<number, SessionResult[]>>({});
   const [loading, setLoading] = useState(true);
   const [selectedMeeting, setSelectedMeeting] = useState<number | "all">("all");
-  const [driverLookup, setDriverLookup] = useState<Map<number, { broadcast_name: string; full_name: string; team_name: string; team_colour: string; country_code: string; name_acronym: string }>>(new Map());
-
-  // Get all race sessions for this year
-  const raceSessions = useMemo(() => {
-    // We'll build this lazily
-    return null;
-  }, []);
+  const [driverLookup, setDriverLookup] = useState<Map<number, DriverInfo>>(new Map());
+  const dataCache = useRef<{
+    key: string;
+    results: Record<number, SessionResult[]>;
+    drivers: Map<number, DriverInfo>;
+  } | null>(null);
 
   // Sort meetings chronologically
   const sortedMeetings = useMemo(
@@ -47,78 +108,44 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
     [meetings],
   );
 
-  // Load race results + driver info for all meetings
+  // Load race results + driver info for all meetings (parallel + cached)
   useEffect(() => {
     let mounted = true;
     setLoading(true);
 
     const raceMeetings = sortedMeetings.filter((m) => new Date(m.date_end).getTime() < Date.now());
+    const cacheKey = raceMeetings.map((m) => `${m.meeting_key}:${m.date_end}`).join("|");
+
+    // Restore from cache if the meeting set hasn't changed
+    if (dataCache.current?.key === cacheKey) {
+      setResultsByMeeting(dataCache.current.results);
+      setDriverLookup(dataCache.current.drivers);
+      setLoading(false);
+      return;
+    }
 
     const loadAll = async () => {
       const results: Record<number, SessionResult[]> = {};
-      const driverCache = new Map<number, { broadcast_name: string; full_name: string; team_name: string; team_colour: string; country_code: string; name_acronym: string }>();
+      const driverCache = new Map<number, DriverInfo>();
 
-      for (const m of raceMeetings) {
-        try {
-          // Get sessions for this meeting to find the race and sprint
-          const sessions = await getSessions(m.meeting_key);
-          const raceSession = sessions.find(
-            (s) => s.session_type === "Race" && s.session_name !== "Sprint",
-          );
-          const sprintSession = sessions.find((s) => s.session_name === "Sprint");
+      // Load meetings in parallel batches
+      for (let i = 0; i < raceMeetings.length; i += BATCH_SIZE) {
+        const batch = raceMeetings.slice(i, i + BATCH_SIZE);
+        const entries = await Promise.all(batch.map((m) => loadMeeting(m.meeting_key)));
 
-          // Load main race results
-          if (raceSession) {
-            const sr = await getSessionResults(m.meeting_key, raceSession.session_key);
-            results[m.meeting_key] = sr;
-
-            // Fetch driver info for this session and cache it
-            const drivers = await getDrivers(raceSession.session_key);
-            for (const d of drivers) {
-              if (!driverCache.has(d.driver_number)) {
-                driverCache.set(d.driver_number, {
-                  broadcast_name: d.broadcast_name,
-                  full_name: d.full_name,
-                  team_name: d.team_name,
-                  team_colour: d.team_colour,
-                  country_code: d.country_code,
-                  name_acronym: d.name_acronym,
-                });
-              }
-            }
+        for (let j = 0; j < batch.length; j++) {
+          const entry = entries[j];
+          if (!entry) continue;
+          const mk = batch[j].meeting_key;
+          results[mk] = entry.results;
+          for (const [dn, di] of entry.drivers) {
+            if (!driverCache.has(dn)) driverCache.set(dn, di);
           }
-
-          // Also load sprint results and merge them in
-          if (sprintSession && sprintSession.session_key !== raceSession?.session_key) {
-            const sprintResults = await getSessionResults(m.meeting_key, sprintSession.session_key);
-            if (sprintResults.length > 0) {
-              results[m.meeting_key] = [
-                ...(results[m.meeting_key] || []),
-                ...sprintResults,
-              ];
-            }
-
-            // Fetch drivers from sprint session too (catches any not in race)
-            const sprintDrivers = await getDrivers(sprintSession.session_key);
-            for (const d of sprintDrivers) {
-              if (!driverCache.has(d.driver_number)) {
-                driverCache.set(d.driver_number, {
-                  broadcast_name: d.broadcast_name,
-                  full_name: d.full_name,
-                  team_name: d.team_name,
-                  team_colour: d.team_colour,
-                  country_code: d.country_code,
-                  name_acronym: d.name_acronym,
-                });
-              }
-            }
-          }
-        } catch {
-          // skip failed meetings
         }
       }
 
       if (mounted) {
+        dataCache.current = { key: cacheKey, results, drivers: driverCache };
         setResultsByMeeting(results);
         setDriverLookup(driverCache);
         setLoading(false);
