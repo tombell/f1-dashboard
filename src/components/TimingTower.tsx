@@ -78,6 +78,7 @@ export default function TimingTower({ drivers, positions, intervals, positionCha
       <div className="flex px-3 py-2 bg-f1-bg3 text-[11px] text-f1-dim uppercase tracking-wider">
         <span className="w-[30px]">#</span>
         <span className="flex-1">Driver</span>
+        <span className="w-[20px] text-center">⚡</span>
         <span className="w-[50px] text-right">Gap</span>
         <span className="w-[50px] text-right">Int</span>
       </div>
@@ -104,9 +105,6 @@ export default function TimingTower({ drivers, positions, intervals, positionCha
               <span className="w-[30px] font-bold text-f1-bright">{pos?.position ?? "—"}</span>
               <span className="flex-1 flex items-center gap-2">
                 <span className="font-semibold text-f1-bright">{driver.name_acronym}</span>
-                {fastestLapDriver === driver.driver_number && (
-                  <span className="text-[11px]" title="Fastest lap">⚡</span>
-                )}
                 {recentPits.has(driver.driver_number) && (
                   <span className="text-[10px] bg-f1-blue/20 text-f1-blue font-bold px-1 rounded leading-none">PIT</span>
                 )}
@@ -118,6 +116,11 @@ export default function TimingTower({ drivers, positions, intervals, positionCha
                   return <span className={`text-[10px] font-bold px-1 rounded leading-none ${color}`}>{label}</span>;
                 })()}
                 <span className="text-f1-dim text-[11px]">{driver.team_name}</span>
+              </span>
+              <span className="w-[20px] text-center">
+                {fastestLapDriver === driver.driver_number && (
+                  <span className="text-[11px]" title="Fastest lap">⚡</span>
+                )}
               </span>
               <span className="w-[50px] text-right text-f1-orange">
                 {iv?.gap_to_leader != null
