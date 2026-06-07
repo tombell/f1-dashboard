@@ -316,14 +316,18 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
           count={stintsByDriver.size}
         >
           <div className="divide-y divide-f1-border">
-            {[...stintsByDriver.entries()]
-              .sort(([, a], [, b]) => (a[0].lap_start ?? 0) - (b[0].lap_start ?? 0))
-              .map(([dn, driverStints]) => {
-                // Sort stints by stint_number
-                const sorted = [...driverStints].sort(
-                  (a, b) => a.stint_number - b.stint_number,
-                );
-                const totalLaps = sorted.reduce((s, st) => s + (st.lap_end - st.lap_start + 1), 0);
+            {(() => {
+              // Compute max total laps across all drivers for a consistent scale
+              const driverLapTotals = [...stintsByDriver.entries()].map(([dn, stints]) => ({
+                dn,
+                stints: [...stints].sort((a, b) => a.stint_number - b.stint_number),
+                total: stints.reduce((s, st) => s + (st.lap_end - st.lap_start + 1), 0),
+              }));
+              const maxTotal = Math.max(...driverLapTotals.map((d) => d.total), 1);
+
+              return driverLapTotals
+                .sort((a, b) => (a.stints[0]?.lap_start ?? 0) - (b.stints[0]?.lap_start ?? 0))
+                .map(({ dn, stints: sorted, total: totalLaps }) => {
 
                 // Build lap → compound map
                 const lapCompound = new Map<number, string>();
@@ -352,7 +356,7 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
                     {/* Stint bar — coloured segments proportional to stint length */}
                     <div className="flex h-6 rounded overflow-hidden mb-1.5">
                       {sorted.map((st, idx) => {
-                        const pct = ((st.lap_end - st.lap_start + 1) / totalLaps) * 100;
+                        const pct = ((st.lap_end - st.lap_start + 1) / maxTotal) * 100;
                         return (
                           <div
                             key={st.stint_number}
@@ -409,7 +413,8 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
                     )}
                   </div>
                 );
-              })}
+              })
+            })()}
           </div>
         </LiveSection>
       )}
