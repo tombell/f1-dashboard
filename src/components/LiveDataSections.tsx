@@ -350,8 +350,8 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
                     </div>
 
                     {/* Stint bar — coloured segments proportional to stint length */}
-                    <div className="flex h-5 rounded overflow-hidden mb-1.5">
-                      {sorted.map((st) => {
+                    <div className="flex h-6 rounded overflow-hidden mb-1.5">
+                      {sorted.map((st, idx) => {
                         const pct = ((st.lap_end - st.lap_start + 1) / totalLaps) * 100;
                         return (
                           <div
@@ -359,12 +359,13 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
                             style={{
                               width: `${pct}%`,
                               backgroundColor: compoundColor(st.compound),
-                              opacity: 0.85,
+                              marginLeft: idx > 0 ? 2 : 0,
+                              borderRadius: sorted.length === 1 ? undefined : idx === 0 ? "4px 0 0 4px" : idx === sorted.length - 1 ? "0 4px 4px 0" : undefined,
                             }}
-                            className="flex items-center justify-center text-[9px] font-bold text-black/70"
+                            className="flex items-center justify-center text-[10px] font-bold text-black/70 border-r border-black/20 last:border-r-0 shrink-0"
                             title={`${st.compound} L${st.lap_start}–${st.lap_end}`}
                           >
-                            {pct > 15 ? st.compound?.slice(0, 2) : ""}
+                            {pct > 12 ? st.compound : ""}
                           </div>
                         );
                       })}
