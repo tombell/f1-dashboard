@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 
 import {
   getLaps,
@@ -44,16 +44,34 @@ function compoundColor(compound: string): string {
   return COMPOUND_COLORS[norm] || "#888";
 }
 
+function DriverCell({
+  driverNumber,
+  driverMap,
+}: {
+  driverNumber: number;
+  driverMap: Map<number, { name_acronym: string; team_name: string; team_colour: string }>;
+}) {
+  const info = driverMap.get(driverNumber);
+  if (!info) return <span className="text-xs font-semibold text-f1-bright">#{driverNumber}</span>;
+  return (
+    // eslint-disable-next-line react-perf/jsx-no-new-object-as-prop
+    <span className="text-xs font-semibold" style={{ color: info.team_colour ? `#${info.team_colour}` : undefined }}>
+      {info.name_acronym}
+      <span className="ml-1.5 text-[11px] text-f1-dim font-normal">· {info.team_name}</span>
+    </span>
+  );
+}
+
 export default function LiveDataSections({
   sessionKey,
-  meetingKey,
+  _meetingKey,
   sessionName,
 }: LiveDataSectionsProps) {
   const [laps, setLaps] = useState<Lap[]>([]);
   const [pits, setPits] = useState<PitStop[]>([]);
   const [stints, setStints] = useState<Stint[]>([]);
   const [weather, setWeather] = useState<WeatherReading[]>([]);
-  const [raceControl, setRaceControl] = useState<RaceControlMessage[]>([]);
+  const [_raceControl, setRaceControl] = useState<RaceControlMessage[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [driverMap, setDriverMap] = useState<
@@ -64,19 +82,9 @@ export default function LiveDataSections({
     { name_acronym: string; team_name: string; team_colour: string }
   > | null>(null);
 
-  function DriverCell({ driverNumber }: { driverNumber: number }) {
-    const info = driverMap.get(driverNumber);
-    if (!info) return <span className="text-xs font-semibold text-f1-bright">#{driverNumber}</span>;
-    return (
-      <span
-        className="text-xs font-semibold"
-        style={{ color: info.team_colour ? `#${info.team_colour}` : undefined }}
-      >
-        {info.name_acronym}
-        <span className="ml-1.5 text-[11px] text-f1-dim font-normal">· {info.team_name}</span>
-      </span>
-    );
-  }
+  const handleToggle = useCallback((k: string) => {
+    setCollapsed((c) => ({ ...c, [k]: !(c[k] ?? true) }));
+  }, []);
 
   useEffect(() => {
     if (!sessionKey) return;
@@ -164,8 +172,8 @@ export default function LiveDataSections({
       driverLaps.get(lap.driver_number)!.push(lap);
     }
 
-    return [...driverLaps.entries()].map(([dn, driverLaps]) => {
-      const cleanLaps = driverLaps.filter((l) => l.lap_duration != null && !l.is_pit_out_lap);
+    return [...driverLaps.entries()].map(([dn, dl]) => {
+      const cleanLaps = dl.filter((l) => l.lap_duration != null && !l.is_pit_out_lap);
       const fastest = cleanLaps.reduce(
         (best, l) => (l.lap_duration != null && l.lap_duration < best ? l.lap_duration : best),
         Infinity,
@@ -174,13 +182,13 @@ export default function LiveDataSections({
         cleanLaps.length > 0
           ? cleanLaps.reduce((s, l) => s + (l.lap_duration ?? 0), 0) / cleanLaps.length
           : 0;
-      const topSpeed = Math.max(...driverLaps.map((l) => l.st_speed_trap ?? 0), 0);
+      const topSpeed = Math.max(...dl.map((l) => l.st_speed_trap ?? 0), 0);
       return {
         driver_number: dn,
         fastest: fastest !== Infinity ? fastest : null,
         average: avg || null,
         cleanCount: cleanLaps.length,
-        totalLaps: driverLaps.length,
+        totalLaps: dl.length,
         topSpeed: topSpeed > 0 ? topSpeed : null,
       };
     });
@@ -232,7 +240,7 @@ export default function LiveDataSections({
           title="🏁 Lap Times"
           sectionKey="laps"
           collapsed={collapsed}
-          onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !(c[k] ?? true) }))}
+          onToggle={handleToggle}
         >
           <table className="w-full border-collapse">
             <thead>
@@ -252,7 +260,7 @@ export default function LiveDataSections({
                   className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3"
                 >
                   <td className="px-3 py-2 text-xs font-semibold text-f1-bright">
-                    <DriverCell driverNumber={ls.driver_number} />
+                    <DriverCell driverNumber={ls.driver_number} driverMap={driverMap} />
                   </td>
                   <td className="px-3 py-2 text-xs text-f1-green tabular-nums">
                     {ls.fastest ? `${ls.fastest.toFixed(3)}s` : "-"}
@@ -278,7 +286,7 @@ export default function LiveDataSections({
           title="🛑 Pit Stops"
           sectionKey="pits"
           collapsed={collapsed}
-          onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !(c[k] ?? true) }))}
+          onToggle={handleToggle}
         >
           <table className="w-full border-collapse">
             <thead>
@@ -295,10 +303,11 @@ export default function LiveDataSections({
               {pits
                 .slice(-50)
                 .toReversed()
-                .map((p, i) => (
-                  <tr key={i} className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3">
+                .map((p) => (
+                  <tr
+                    key={`${p.driver_number}_${p.lap_number}_${p.pit_duration}`} className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3">
                     <td className="px-3 py-2 text-xs font-semibold text-f1-bright">
-                      <DriverCell driverNumber={p.driver_number} />
+                      <DriverCell driverNumber={p.driver_number} driverMap={driverMap} />
                     </td>
                     <td className="px-3 py-2 text-xs">L{p.lap_number}</td>
                     <td className="px-3 py-2 text-xs text-f1-dim">
@@ -330,21 +339,21 @@ export default function LiveDataSections({
           title="🏎️ Tyre Stints"
           sectionKey="stints"
           collapsed={collapsed}
-          onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !(c[k] ?? true) }))}
+          onToggle={handleToggle}
         >
           <div className="divide-y divide-f1-border">
             {(() => {
               // Compute max total laps across all drivers for a consistent scale
-              const driverLapTotals = [...stintsByDriver.entries()].map(([dn, stints]) => ({
+              const driverLapTotals = [...stintsByDriver.entries()].map(([dn, driverStints]) => ({
                 dn,
-                stints: [...stints].toSorted((a, b) => a.stint_number - b.stint_number),
-                total: stints.reduce((s, st) => s + (st.lap_end - st.lap_start + 1), 0),
+                stints: [...driverStints].toSorted((a, b) => a.stint_number - b.stint_number),
+                total: driverStints.reduce((s, st) => s + (st.lap_end - st.lap_start + 1), 0),
               }));
               const maxTotal = Math.max(...driverLapTotals.map((d) => d.total), 1);
 
               return driverLapTotals
                 .toSorted((a, b) => (a.stints[0]?.lap_start ?? 0) - (b.stints[0]?.lap_start ?? 0))
-                .map(({ dn, stints: sorted, total: totalLaps }) => {
+                .map(({ dn, stints: sorted, total: _totalLaps }) => {
                   // Build lap → compound map
                   const lapCompound = new Map<number, string>();
                   for (const st of sorted) {
@@ -366,16 +375,17 @@ export default function LiveDataSections({
                     <div key={dn} className="px-4 py-3">
                       {/* Driver header */}
                       <div className="mb-2">
-                        <DriverCell driverNumber={dn} />
+                        <DriverCell driverNumber={dn} driverMap={driverMap} />
                       </div>
 
-                      {/* Stint bar — coloured segments proportional to stint length */}
+                      {/* Stint bar */}
                       <div className="flex h-6 rounded overflow-hidden mb-1.5">
                         {sorted.map((st, idx) => {
                           const pct = ((st.lap_end - st.lap_start + 1) / maxTotal) * 100;
                           return (
                             <div
                               key={st.stint_number}
+                              // eslint-disable-next-line react-perf/jsx-no-new-object-as-prop
                               style={{
                                 width: `${pct}%`,
                                 backgroundColor: compoundColor(st.compound),
@@ -401,15 +411,15 @@ export default function LiveDataSections({
 
                       {/* Stint labels */}
                       <div className="flex gap-2 text-[10px] text-f1-dim mb-2 flex-wrap">
-                        {sorted.map((st) => (
-                          <span key={st.stint_number}>
-                            <span
-                              className="inline-block w-2 h-2 rounded-sm mr-1 align-middle"
-                              style={{ backgroundColor: compoundColor(st.compound), opacity: 0.6 }}
-                            />
-                            {st.compound} L{st.lap_start}–{st.lap_end}
-                          </span>
-                        ))}
+                        {sorted.map((st) => {
+                          return (
+                            <span key={st.stint_number}>
+                              {/* eslint-disable-next-line react-perf/jsx-no-new-object-as-prop */}
+                              <span className="inline-block w-2 h-2 rounded-sm mr-1 align-middle" style={{ backgroundColor: compoundColor(st.compound), opacity: 0.6 }} />
+                              {st.compound} L{st.lap_start}–{st.lap_end}
+                            </span>
+                          );
+                        })}
                       </div>
 
                       {/* Lap time mini chart — only for Race sessions */}
@@ -423,6 +433,7 @@ export default function LiveDataSections({
                               <div
                                 key={l.lap_number}
                                 className="w-[3px] rounded-t-sm shrink-0"
+                                // eslint-disable-next-line react-perf/jsx-no-new-object-as-prop
                                 style={{
                                   height: `${height}px`,
                                   backgroundColor: compoundColor(comp),
@@ -448,7 +459,7 @@ export default function LiveDataSections({
           title="🌤️ Weather History"
           sectionKey="weather"
           collapsed={collapsed}
-          onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !(c[k] ?? true) }))}
+          onToggle={handleToggle}
         >
           <WeatherChart data={weather} />
         </LiveSection>
@@ -460,7 +471,7 @@ export default function LiveDataSections({
           title="📊 Position Changes"
           sectionKey="positions"
           collapsed={collapsed}
-          onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !(c[k] ?? true) }))}
+          onToggle={handleToggle}
         >
           <table className="w-full border-collapse">
             <thead>
@@ -482,7 +493,7 @@ export default function LiveDataSections({
                       className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3"
                     >
                       <td className="px-3 py-2 text-xs font-semibold text-f1-bright">
-                        <DriverCell driverNumber={dn} />
+                        <DriverCell driverNumber={dn} driverMap={driverMap} />
                       </td>
                       <td className="px-3 py-2 text-xs text-f1-dim">
                         {ch.start != null ? `P${ch.start}` : "-"}
@@ -512,7 +523,7 @@ export default function LiveDataSections({
         title="🚩 Race Control"
         sectionKey="rc"
         collapsed={collapsed}
-        onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !(c[k] ?? true) }))}
+        onToggle={handleToggle}
       >
         <RaceControl sessionKey={sessionKey} />
       </LiveSection>
@@ -534,18 +545,24 @@ function LiveSection({
   children: React.ReactNode;
 }) {
   const isCollapsed = collapsed[sectionKey] ?? true;
+  const handleClick = useCallback(() => onToggle(sectionKey), [onToggle, sectionKey]);
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') onToggle(sectionKey);
+  }, [onToggle, sectionKey]);
 
   return (
     <div className="bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden">
-      <div
-        onClick={() => onToggle(sectionKey)}
-        className="text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center cursor-pointer select-none"
+      <button
+        onClick={handleClick}
+        type="button"
+        className="w-full text-left text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center cursor-pointer select-none bg-transparent border-t-0 border-x-0 font-inherit"
+        onKeyDown={handleKeyDown}
       >
         <span>{title}</span>
         <span className="text-f1-dim text-[11px] hover:bg-f1-bg4 px-1.5 py-0.5 rounded transition-colors">
           {isCollapsed ? "▶" : "▼"}
         </span>
-      </div>
+      </button>
       {!isCollapsed && <div className="overflow-x-auto">{children}</div>}
     </div>
   );

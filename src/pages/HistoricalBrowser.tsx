@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
+import type React from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { getMeetings, getLatestSession } from "@/api/openf1";
+import { getMeetings } from "@/api/openf1";
 import Header from "@/components/Header";
 import MeetingCalendar from "@/components/MeetingCalendar";
 import MeetingDetail from "@/components/MeetingDetail";
@@ -14,7 +15,7 @@ export default function HistoricalBrowser() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, _setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,6 +31,7 @@ export default function HistoricalBrowser() {
         if (!mounted) return;
         setMeetings(data);
         setError(null);
+        return null;
       })
       .catch((e: unknown) => {
         if (!mounted) return;
@@ -50,16 +52,10 @@ export default function HistoricalBrowser() {
   useEffect(() => {
     if (meetingKey && meetings.length > 0) {
       const mk = Number(meetingKey);
-      const m = meetings.find((m) => m.meeting_key === mk);
-      if (m) setSelectedMeeting(m);
+      const foundMeeting = meetings.find((m) => m.meeting_key === mk);
+      if (foundMeeting) setSelectedMeeting(foundMeeting);
     }
   }, [meetingKey, meetings]);
-
-  useCallback(() => {
-    getLatestSession().then((s) => {
-      if (s) setSession(s);
-    });
-  }, []);
 
   const handleSelectMeeting = useCallback(
     (meeting: Meeting) => {
@@ -81,9 +77,9 @@ export default function HistoricalBrowser() {
   }, [searchParams, setSearchParams]);
 
   const handleSelectSession = useCallback(
-    (session: Session) => {
+    (selSession: Session) => {
       const params = new URLSearchParams(searchParams);
-      params.set("session", String(session.session_key));
+      params.set("session", String(selSession.session_key));
       setSearchParams(params, { replace: true });
     },
     [searchParams, setSearchParams],
@@ -117,17 +113,25 @@ export default function HistoricalBrowser() {
     [searchParams, setSearchParams],
   );
 
+  const handleRacesClick = useCallback(() => handleViewChange("races"), [handleViewChange]);
+  const handleStandingsClick = useCallback(() => handleViewChange("standings"), [handleViewChange]);
+  const handleYearSelect = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => handleYearChange(Number(e.target.value)),
+    [handleYearChange],
+  );
+  const handleRefresh = useCallback(() => {}, []);
+
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: currentYear - 2017 }, (_, i) => 2018 + i).toReversed();
 
   return (
     <div className="flex flex-col gap-3 p-4 h-full min-h-screen">
-      <Header session={session} onRefresh={() => {}} />
+      <Header session={session} onRefresh={handleRefresh} />
 
       <div className="bg-f1-bg2 border border-f1-border rounded-lg px-5 py-3.5 flex items-center justify-between flex-wrap gap-3">
         <div className="flex gap-2 flex-wrap">
           <button
-            onClick={() => handleViewChange("races")}
+            onClick={handleRacesClick}
             className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-colors border border-transparent ${
               view === "races"
                 ? "bg-f1-red text-white border-white/20"
@@ -137,7 +141,7 @@ export default function HistoricalBrowser() {
             Races
           </button>
           <button
-            onClick={() => handleViewChange("standings")}
+            onClick={handleStandingsClick}
             className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-colors border border-transparent ${
               view === "standings"
                 ? "bg-f1-red text-white border-white/20"
@@ -150,7 +154,7 @@ export default function HistoricalBrowser() {
 
         <select
           value={year}
-          onChange={(e) => handleYearChange(Number(e.target.value))}
+          onChange={handleYearSelect}
           className="bg-f1-bg3 border border-f1-border rounded-md px-2.5 py-1.5 text-f1-bright text-xs font-semibold cursor-pointer outline-none focus:border-f1-red transition-colors font-mono"
         >
           {years.map((y) => (

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import {
@@ -23,10 +23,14 @@ import type {
   Position,
   Interval,
   WeatherReading,
-  PitStop,
   Stint,
 } from "@/types/api";
 
+const extractDriver = (entry: any): number | null => {
+  if (entry.driver_number) return entry.driver_number;
+  const match = (entry.message || "").match(/CAR\s+(\d+)/);
+  return match ? parseInt(match[1]) : null;
+};
 
 export default function LiveDashboard() {
   const [session, setSession] = useState<Session | null>(null);
@@ -56,10 +60,10 @@ export default function LiveDashboard() {
     const interval = setInterval(
       async () => {
         try {
-          const s = sessionKey
+          const sessionRes = sessionKey
             ? await (await fetch(`/v1/sessions?session_key=${sessionKey}`)).json()
             : await getLatestSession();
-          const sess = Array.isArray(s) ? s[0] : s;
+          const sess = Array.isArray(sessionRes) ? sessionRes[0] : sessionRes;
           if (!sess) return;
           if (!mounted) return;
           setSession(sess);
@@ -109,10 +113,10 @@ export default function LiveDashboard() {
           setDrivers(d);
 
           // Track fastest lap
-          const maxLap = fastestLapRef.current?.maxLap ?? 0;
+          const prevMaxLap = fastestLapRef.current?.maxLap ?? 0;
           try {
             const lapData = await (
-              await fetch(`/v1/laps?session_key=${sk}&lap_number>=${maxLap}`)
+              await fetch(`/v1/laps?session_key=${sk}&lap_number>=${prevMaxLap}`)
             ).json();
             if (Array.isArray(lapData) && lapData.length > 0) {
               for (const lap of lapData) {
@@ -227,20 +231,20 @@ export default function LiveDashboard() {
               // During red flag: compare lap counts to find genuine retirees.
               // Drivers who retired stopped lapping early; those who stopped for
               // the red flag are near the leader's lap count.
-              const maxLap = Math.max(...stints.map((s: Stint) => s.lap_end ?? 0), 0);
-              const stale = new Set<number>();
+              const maxLap = Math.max(...stints.map((stint: Stint) => stint.lap_end ?? 0), 0);
+              const redFlagStale = new Set<number>();
               for (const drv of d) {
                 const driverStints = stints.filter(
-                  (s: Stint) => s.driver_number === drv.driver_number,
+                  (stint: Stint) => stint.driver_number === drv.driver_number,
                 );
                 if (driverStints.length === 0) continue;
-                const lastLap = Math.max(...driverStints.map((s: Stint) => s.lap_end ?? 0), 0);
+                const lastLap = Math.max(...driverStints.map((stint: Stint) => stint.lap_end ?? 0), 0);
                 // 3+ laps behind the leader = retired before the red flag
                 if (lastLap > 0 && maxLap - lastLap >= 3) {
-                  stale.add(drv.driver_number);
+                  redFlagStale.add(drv.driver_number);
                 }
               }
-              setRetiredDrivers(new Set(stale));
+              setRetiredDrivers(new Set(redFlagStale));
             } else if (sessionActive) {
               setRetiredDrivers(new Set(stale));
             }
@@ -274,12 +278,6 @@ export default function LiveDashboard() {
           const invCount = new Map<number, number>();
           const penCount = new Map<number, number>();
           if (Array.isArray(rc)) {
-            // Extract driver number from message text when field is null
-            const extractDriver = (entry: any): number | null => {
-              if (entry.driver_number) return entry.driver_number;
-              const match = (entry.message || "").match(/CAR\s+(\d+)/);
-              return match ? parseInt(match[1]) : null;
-            };
             // Count open investigations and unresolved penalties per driver
             // across ALL messages (order doesn't matter for addition/subtraction).
             for (const entry of rc) {
@@ -331,7 +329,7 @@ export default function LiveDashboard() {
       mounted = false;
       clearInterval(interval);
     };
-  }, [sessionKey]);
+  }, [sessionKey, currentLap, fastestLapDriver]);
 
   const latestWeather = weather.length > 0 ? weather[weather.length - 1] : null;
   const latestPositions = positions.reduce((map, p) => {
@@ -346,9 +344,11 @@ export default function LiveDashboard() {
     return map;
   }, [drivers]);
 
+  const handleRefresh = useCallback(() => setError(null), []);
+
   return (
     <div className="flex flex-col gap-3 p-4 h-full min-h-screen">
-      <Header session={session} currentLap={currentLap} onRefresh={() => setError(null)} />
+      <Header session={session} currentLap={currentLap} onRefresh={handleRefresh} />
       <div className="flex items-center gap-3 flex-wrap">
         <WeatherBar weather={latestWeather} />
         <TrackClock />

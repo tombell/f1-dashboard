@@ -98,6 +98,11 @@ export default function TeamRadio({ sessionKey, drivers }: TeamRadioProps) {
     };
   }, [sessionKey]);
 
+  const handlePlay = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    const url = e.currentTarget.dataset.url;
+    if (url) playAudio(url);
+  }, [playAudio]);
+
   if (!entries.length) {
     return null;
   }
@@ -116,11 +121,12 @@ export default function TeamRadio({ sessionKey, drivers }: TeamRadioProps) {
 
           return (
             <div
-              key={`${entry.date}_${entry.driver_number}_${i}`}
+              key={`${entry.date}_${entry.driver_number}_${i}` /* eslint-disable-line react/no-array-index-key */}
               className="flex items-center gap-2 px-3 py-1.5 text-xs border-b border-f1-border last:border-b-0 hover:bg-f1-bg3/30 transition-colors"
             >
               <button
-                onClick={() => playAudio(entry.recording_url)}
+                onClick={handlePlay}
+                data-url={entry.recording_url}
                 className="w-6 h-6 flex items-center justify-center rounded bg-f1-bg3 hover:bg-f1-blue/30 text-f1-dim hover:text-f1-blue transition-colors shrink-0"
                 title={isPlaying ? "Pause" : "Play"}
               >

@@ -5,12 +5,6 @@ interface MeetingCalendarProps {
   onSelect: (meeting: Meeting) => void;
 }
 
-const STATUS_EMOJIS: Record<string, string> = {
-  completed: "🇪",
-  ongoing: "🇴",
-  upcoming: "🇺",
-};
-
 function getStatus(meeting: Meeting): "completed" | "ongoing" | "upcoming" {
   const now = Date.now();
   const start = new Date(meeting.date_start).getTime();
@@ -57,10 +51,19 @@ export default function MeetingCalendar({ meetings, onSelect }: MeetingCalendarP
         const flag = countryFlag(meeting.country_code);
 
         return (
-          <div
+          <button
             key={meeting.meeting_key}
+            /* eslint-disable-next-line react-perf/jsx-no-new-function-as-prop */
             onClick={() => onSelect(meeting)}
-            className="bg-f1-bg2 border border-f1-border rounded-lg p-3.5 cursor-pointer transition-all hover:bg-f1-bg3 hover:border-f1-red hover:-translate-y-px relative overflow-hidden"
+            /* eslint-disable-next-line react-perf/jsx-no-new-function-as-prop */
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelect(meeting);
+              }
+            }}
+            type="button"
+            className="w-full text-left bg-f1-bg2 border border-f1-border rounded-lg p-3.5 cursor-pointer transition-all hover:bg-f1-bg3 hover:border-f1-red hover:-translate-y-px relative overflow-hidden font-inherit"
           >
             <span className="absolute right-3 top-3 text-3xl leading-none opacity-60">{flag}</span>
 
@@ -75,7 +78,7 @@ export default function MeetingCalendar({ meetings, onSelect }: MeetingCalendarP
             <div className="mt-2">
               <StatusBadge status={status} />
             </div>
-          </div>
+          </button>
         );
       })}
     </div>

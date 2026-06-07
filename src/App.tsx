@@ -1,3 +1,4 @@
+/* eslint-disable react-perf/jsx-no-jsx-as-prop */
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import HistoricalBrowser from "./pages/HistoricalBrowser";

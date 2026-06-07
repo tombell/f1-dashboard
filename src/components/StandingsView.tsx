@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 
 import { getSessionResults, getSessions, getDrivers } from "@/api/openf1";
-import type { Meeting, Session, SessionResult } from "@/types/api";
+import type { Meeting, SessionResult } from "@/types/api";
 
 interface StandingsViewProps {
   meetings: Meeting[];
@@ -31,7 +31,7 @@ interface DriverInfo {
 const POINTS_SYSTEM = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
 const BATCH_SIZE = 5;
 
-function calcPoints(position: number | null, hasFastestLap?: boolean): number {
+function calcPoints(position: number | null): number {
   if (position == null) return 0;
   const base = POINTS_SYSTEM[position - 1] || 0;
   return base;
@@ -91,7 +91,7 @@ async function loadMeeting(mk: number): Promise<LoadResult> {
   }
 }
 
-export default function StandingsView({ meetings, year }: StandingsViewProps) {
+export default function StandingsView({ meetings, year: _year }: StandingsViewProps) {
   const [resultsByMeeting, setResultsByMeeting] = useState<Record<number, SessionResult[]>>({});
   const [loading, setLoading] = useState(true);
   const [selectedMeeting, setSelectedMeeting] = useState<number | "all">("all");
@@ -101,6 +101,10 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
     results: Record<number, SessionResult[]>;
     drivers: Map<number, DriverInfo>;
   } | null>(null);
+
+  const handleMeetingChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedMeeting(e.target.value === "all" ? "all" : Number(e.target.value));
+  }, []);
 
   // Sort meetings chronologically
   const sortedMeetings = useMemo(
@@ -132,9 +136,11 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
       const driverCache = new Map<number, DriverInfo>();
 
       // Load meetings in parallel batches
+      // eslint-disable-next-line no-await-in-loop
       for (let i = 0; i < raceMeetings.length; i += BATCH_SIZE) {
         const batch = raceMeetings.slice(i, i + BATCH_SIZE);
-        const entries = await Promise.all(batch.map((m) => loadMeeting(m.meeting_key)));
+        // eslint-disable-next-line no-await-in-loop
+const entries = await Promise.all(batch.map((m) => loadMeeting(m.meeting_key)));
 
         for (let j = 0; j < batch.length; j++) {
           const entry = entries[j];
@@ -294,9 +300,7 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
         <span className="text-xs font-semibold text-f1-bright">Standings as of:</span>
         <select
           value={selectedMeeting === "all" ? "all" : String(selectedMeeting)}
-          onChange={(e) =>
-            setSelectedMeeting(e.target.value === "all" ? "all" : Number(e.target.value))
-          }
+          onChange={handleMeetingChange}
           className="bg-f1-bg3 border border-f1-border rounded-md px-2.5 py-1.5 text-f1-bright text-xs font-semibold cursor-pointer outline-none focus:border-f1-red font-mono"
         >
           <option value="all">All completed races</option>
@@ -327,7 +331,7 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
               </div>
               <div
                 className="text-[11px] text-f1-dim truncate"
-                style={driver.team_colour ? { color: `#${driver.team_colour}` } : undefined}
+                style={driverStyle(driver.team_colour)}
               >
                 {driver.team_name}
                 {driver.wins > 0 && <span className="text-f1-yellow ml-2">🏆 {driver.wins}</span>}
@@ -355,4 +359,8 @@ function posCls(idx: number): string {
   if (idx === 0) return "text-f1-green";
   if (idx === 1 || idx === 2) return "text-f1-blue";
   return "text-f1-dim";
+}
+
+function driverStyle(colour: string): React.CSSProperties | undefined {
+  return colour ? { color: `#${colour}` } : undefined;
 }

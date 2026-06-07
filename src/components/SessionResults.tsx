@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import type React from "react";
 
 import type { SessionResult } from "@/types/api";
 
@@ -15,6 +16,10 @@ function dnShort(r: SessionResult): string {
 
 function driverName(r: SessionResult): string {
   return r.broadcast_name || r.full_name || `Driver #${r.driver_number}`;
+}
+
+function driverColorStyle(teamColour: string | undefined | null): React.CSSProperties {
+  return { color: teamColour ? `#${teamColour}` : undefined };
 }
 
 function raceTime(seconds: number): string {
@@ -45,7 +50,7 @@ export default function SessionResults({
 }: SessionResultsProps) {
   const tableType = useMemo(() => detectTableType(results, sessionType), [results, sessionType]);
   const isSprint = sessionName.toLowerCase().includes("sprint");
-  const segLabels = isSprint ? ["SQ1", "SQ2", "SQ3"] : ["Q1", "Q2", "Q3"];
+  const segLabels = useMemo(() => (isSprint ? ["SQ1", "SQ2", "SQ3"] : ["Q1", "Q2", "Q3"]), [isSprint]);
   const [resultsOpen, setResultsOpen] = useState(true);
   const [gridOpen, setGridOpen] = useState(true);
 
@@ -75,6 +80,7 @@ export default function SessionResults({
       {/* Main results table */}
       <div className="bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden mt-1.5">
         <button
+          /* eslint-disable-next-line jsx-no-new-function-as-prop */
           onClick={() => setResultsOpen((o) => !o)}
           className="w-full text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center cursor-pointer bg-transparent border-t-0 border-x-0 hover:bg-f1-bg3 transition-colors"
         >
@@ -106,6 +112,7 @@ export default function SessionResults({
       {grid.length > 0 && (
         <div className="bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden mt-1.5">
           <button
+            /* eslint-disable-next-line jsx-no-new-function-as-prop */
             onClick={() => setGridOpen((o) => !o)}
             className="w-full text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center cursor-pointer bg-transparent border-t-0 border-x-0 hover:bg-f1-bg3 transition-colors"
           >
@@ -144,7 +151,7 @@ export default function SessionResults({
                       </td>
                       <td className="px-3 py-2 text-xs">
                         <span
-                          style={{ color: g.team_colour ? `#${g.team_colour}` : undefined }}
+                          style={driverColorStyle(g.team_colour)}
                           className="font-semibold"
                         >
                           {driverName(g)}
@@ -206,7 +213,7 @@ function PracticeTable({ results }: { results: SessionResult[] }) {
             <td className={`px-3 py-2 text-xs font-bold ${posColor(r.position)}`}>P{r.position}</td>
             <td className="px-3 py-2 text-xs">
               <span
-                style={{ color: r.team_colour ? `#${r.team_colour}` : undefined }}
+                style={driverColorStyle(r.team_colour)}
                 className="font-semibold"
               >
                 {driverName(r)}
@@ -299,7 +306,7 @@ function QualifyingTable({
               </td>
               <td className="px-3 py-2 text-xs">
                 <span
-                  style={{ color: r.team_colour ? `#${r.team_colour}` : undefined }}
+                  style={driverColorStyle(r.team_colour)}
                   className="font-semibold"
                 >
                   {driverName(r)}
@@ -380,7 +387,7 @@ function RaceTable({ results }: { results: SessionResult[] }) {
               </td>
               <td className="px-3 py-2 text-xs">
                 <span
-                  style={{ color: r.team_colour ? `#${r.team_colour}` : undefined }}
+                  style={driverColorStyle(r.team_colour)}
                   className="font-semibold"
                 >
                   {driverName(r)}

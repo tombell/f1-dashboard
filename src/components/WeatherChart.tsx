@@ -151,16 +151,16 @@ export default function WeatherChart({ data }: WeatherChartProps) {
 
   return (
     <div className="w-full py-2">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: "280px" }}>
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-h-[280px]">
         {/* Horizontal grid lines */}
         {gridYPositions.map((y) => (
           <line key={y} x1={ML} y1={y} x2={W - MR} y2={y} stroke="#2a2a2a" strokeWidth={1} />
         ))}
 
         {/* Rain bands */}
-        {rainBands.map((b, i) => (
+        {rainBands.map((b) => (
           <rect
-            key={i}
+            key={`${b.x1}-${b.x2}`}
             x={b.x1}
             y={MT}
             width={Math.max(2, b.x2 - b.x1)}
@@ -198,8 +198,8 @@ export default function WeatherChart({ data }: WeatherChartProps) {
         <polyline points={airPoints} fill="none" stroke="#64b5f6" strokeWidth={2} />
 
         {/* Wind dots */}
-        {windDots.map((d, i) => (
-          <circle key={i} cx={d.x} cy={d.y} r={1.5} fill="#aaa" opacity={0.6} />
+        {windDots.map((d) => (
+          <circle key={`${d.x}-${d.y}`} cx={d.x} cy={d.y} r={1.5} fill="#aaa" opacity={0.6} />
         ))}
         {/* Wind connecting line */}
         <polyline
@@ -270,9 +270,9 @@ export default function WeatherChart({ data }: WeatherChartProps) {
         </text>
 
         {/* Time labels */}
-        {timeLabels.map((t, i) => (
+        {timeLabels.map((t) => (
           <text
-            key={i}
+            key={t.x}
             x={t.x}
             y={H - 8}
             textAnchor="middle"

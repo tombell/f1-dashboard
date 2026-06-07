@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import type React from "react";
 
 import { getSessions, getSessionResults, getStartingGrid, getDrivers } from "@/api/openf1";
 import LiveDataSections from "@/components/LiveDataSections";
@@ -88,6 +89,7 @@ export default function MeetingDetail({
           setSelectedSession(data[0]);
         }
         setLoading(false);
+        return null;
       })
       .catch(() => {
         if (mounted) setLoading(false);
@@ -178,11 +180,26 @@ export default function MeetingDetail({
   }, [selectedSession, meeting.meeting_key]);
 
   const sessionHasResults = results.length > 0;
-  const isQualifying =
-    selectedSession?.session_type === "Qualifying" ||
-    selectedSession?.session_type === "SprintQualifying";
-  const isRace = selectedSession?.session_type === "Race";
-  const isPractice = selectedSession?.session_type === "Practice";
+
+  const handleSessionClick = useCallback((s: Session) => {
+    setSelectedSession(s);
+    onSessionSelect?.(s);
+  }, [setSelectedSession, onSessionSelect]);
+
+  const handleSessionClickEvent = useCallback(
+    (e: React.MouseEvent | React.KeyboardEvent) => {
+      const key = Number((e.currentTarget as HTMLElement).dataset.sessionKey);
+      const s = sortedSessions.find((ss) => ss.session_key === key);
+      if (s) {
+        if ("key" in e) {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          e.preventDefault();
+        }
+        handleSessionClick(s);
+      }
+    },
+    [sortedSessions, handleSessionClick],
+  );
 
   return (
     <div className="flex flex-col gap-3">
@@ -225,13 +242,14 @@ export default function MeetingDetail({
         {sortedSessions.map((s) => {
           const isSelected = selectedSession?.session_key === s.session_key;
           return (
-            <div
+            <button
               key={s.session_key}
-              onClick={() => {
-                setSelectedSession(s);
-                onSessionSelect?.(s);
-              }}
-              className={`bg-f1-bg2 border rounded-lg px-4 py-3 flex justify-between items-center cursor-pointer transition-colors ${
+              type="button"
+              data-session-key={s.session_key}
+              onClick={handleSessionClickEvent}
+              onKeyDown={handleSessionClickEvent}
+              aria-label={s.session_name}
+              className={`w-full text-left bg-f1-bg2 border rounded-lg px-4 py-3 flex justify-between items-center cursor-pointer transition-colors font-inherit ${
                 isSelected
                   ? "border-f1-blue bg-f1-bg3"
                   : "border-f1-border hover:border-f1-blue hover:bg-f1-bg3"
@@ -246,7 +264,7 @@ export default function MeetingDetail({
               <div className="flex items-center gap-3">
                 <span className="text-[11px] text-f1-dim">{formatDate(s.date_start)}</span>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -275,9 +293,9 @@ export default function MeetingDetail({
 
       {!loading && selectedSession && !sessionHasResults && (
         <div className="bg-f1-bg2 border border-f1-border rounded-lg py-8 text-center text-f1-dim text-sm">
-          <div className="text-4xl mb-3 opacity-40" role="img" aria-label="empty">
+          <span className="text-4xl mb-3 opacity-40" aria-hidden="true">
             📭
-          </div>
+          </span>
           No results available for this session yet.
         </div>
       )}
