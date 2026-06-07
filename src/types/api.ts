@@ -181,6 +181,14 @@ export interface Overtake {
   date: string;
 }
 
+export interface TeamRadioEntry {
+  session_key: number;
+  meeting_key: number;
+  driver_number: number;
+  date: string;
+  recording_url: string;
+}
+
 export interface ChampionshipDriver {
   driver_number: number;
   full_name: string;

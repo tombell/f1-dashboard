@@ -120,7 +120,7 @@ export async function getLocation(sessionKey: number) {
 
 // Team Radio
 export async function getTeamRadio(sessionKey: number) {
-  return fetchJson<unknown[]>(`/team_radio?session_key=${sessionKey}`);
+  return fetchJson<import("../types/api").TeamRadioEntry[]>(`/team_radio?session_key=${sessionKey}`);
 }
 
 // Overtakes

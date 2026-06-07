@@ -1,9 +1,10 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import Header from "@/components/Header";
 import WeatherBar from "@/components/WeatherBar";
 import TimingTower from "@/components/TimingTower";
 import RaceControl from "@/components/RaceControl";
+import TeamRadio from "@/components/TeamRadio";
 import TrackClock from "@/components/TrackClock";
 import { getLatestSession, getDrivers, getPositions, getIntervals, getWeather, getPitStops, getStints } from "@/api/openf1";
 import type { Session, Driver, Position, Interval, WeatherReading, PitStop, Stint } from "@/types/api";
@@ -206,6 +207,13 @@ export default function LiveDashboard() {
     map.set(p.driver_number, p);
     return map;
   }, new Map<number, Position>());
+  const driverNameMap = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const d of drivers) {
+      map.set(d.driver_number, d.name_acronym);
+    }
+    return map;
+  }, [drivers]);
 
   return (
     <div className="flex flex-col gap-3 p-4 h-full min-h-screen">
@@ -223,6 +231,7 @@ export default function LiveDashboard() {
         <TimingTower drivers={drivers} positions={latestPositions} intervals={intervals} positionChanges={positionChanges} recentPits={recentPits} fastestLapDriver={fastestLapDriver} currentTyres={currentTyres} />
         <RaceControl sessionKey={session?.session_key} />
       </div>
+      <TeamRadio sessionKey={session?.session_key} drivers={driverNameMap} />
     </div>
   );
 }
