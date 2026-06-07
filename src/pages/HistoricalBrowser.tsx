@@ -118,7 +118,7 @@ export default function HistoricalBrowser() {
   );
 
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: currentYear - 2017 }, (_, i) => 2018 + i).reverse();
+  const years = Array.from({ length: currentYear - 2017 }, (_, i) => 2018 + i).toReversed();
 
   return (
     <div className="flex flex-col gap-3 p-4 h-full min-h-screen">

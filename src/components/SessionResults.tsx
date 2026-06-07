@@ -68,7 +68,7 @@ export default function SessionResults({
   }, [results, tableType]);
 
   // Sort by position (null positions go to end)
-  const sorted = [...results].sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
+  const sorted = [...results].toSorted((a, b) => (a.position ?? 999) - (b.position ?? 999));
 
   return (
     <>
@@ -131,7 +131,7 @@ export default function SessionResults({
               </thead>
               <tbody>
                 {[...grid]
-                  .sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
+                  .toSorted((a, b) => (a.position ?? 999) - (b.position ?? 999))
                   .map((g) => (
                     <tr
                       key={`${g.driver_number}-${g.position}`}

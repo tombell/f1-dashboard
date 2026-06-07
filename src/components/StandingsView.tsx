@@ -105,7 +105,7 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
   // Sort meetings chronologically
   const sortedMeetings = useMemo(
     () =>
-      [...meetings].sort(
+      [...meetings].toSorted(
         (a, b) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime(),
       ),
     [meetings],
@@ -276,7 +276,7 @@ export default function StandingsView({ meetings, year }: StandingsViewProps) {
       }
     }
 
-    return [...driverPoints.values()].sort((a, b) => b.points - a.points);
+    return [...driverPoints.values()].toSorted((a, b) => b.points - a.points);
   }, [resultsByMeeting, sortedMeetings, selectedMeeting, driverLookup]);
 
   if (loading) {

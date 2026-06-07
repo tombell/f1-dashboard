@@ -294,7 +294,7 @@ export default function LiveDataSections({
             <tbody>
               {pits
                 .slice(-50)
-                .reverse()
+                .toReversed()
                 .map((p, i) => (
                   <tr key={i} className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3">
                     <td className="px-3 py-2 text-xs font-semibold text-f1-bright">
@@ -337,13 +337,13 @@ export default function LiveDataSections({
               // Compute max total laps across all drivers for a consistent scale
               const driverLapTotals = [...stintsByDriver.entries()].map(([dn, stints]) => ({
                 dn,
-                stints: [...stints].sort((a, b) => a.stint_number - b.stint_number),
+                stints: [...stints].toSorted((a, b) => a.stint_number - b.stint_number),
                 total: stints.reduce((s, st) => s + (st.lap_end - st.lap_start + 1), 0),
               }));
               const maxTotal = Math.max(...driverLapTotals.map((d) => d.total), 1);
 
               return driverLapTotals
-                .sort((a, b) => (a.stints[0]?.lap_start ?? 0) - (b.stints[0]?.lap_start ?? 0))
+                .toSorted((a, b) => (a.stints[0]?.lap_start ?? 0) - (b.stints[0]?.lap_start ?? 0))
                 .map(({ dn, stints: sorted, total: totalLaps }) => {
                   // Build lap → compound map
                   const lapCompound = new Map<number, string>();
@@ -356,7 +356,7 @@ export default function LiveDataSections({
                   // Get this driver's laps for the mini chart
                   const driverLaps = laps
                     .filter((l) => l.driver_number === dn && l.lap_duration != null && !l.is_pitlap)
-                    .sort((a, b) => a.lap_number - b.lap_number);
+                    .toSorted((a, b) => a.lap_number - b.lap_number);
                   const fastestLap = driverLaps.reduce(
                     (best, l) => (l.lap_duration! < best ? l.lap_duration! : best),
                     Infinity,
@@ -473,7 +473,7 @@ export default function LiveDataSections({
             </thead>
             <tbody>
               {[...posChanges.entries()]
-                .sort(([, a], [, b]) => (a.start ?? 99) - (b.start ?? 99))
+                .toSorted(([, a], [, b]) => (a.start ?? 99) - (b.start ?? 99))
                 .map(([dn, ch]) => {
                   const net = ch.start != null && ch.end != null ? ch.start - ch.end : 0;
                   return (

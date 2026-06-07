@@ -278,7 +278,7 @@ export default function LiveDashboard() {
               return match ? parseInt(match[1]) : null;
             };
             // Process newest first to get latest status per driver
-            const sorted = [...rc].reverse();
+            const sorted = [...rc].toReversed();
             for (const entry of sorted) {
               const dn = extractDriver(entry);
               if (!dn || penalties.has(dn)) continue;

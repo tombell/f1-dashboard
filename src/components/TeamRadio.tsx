@@ -81,7 +81,7 @@ export default function TeamRadio({ sessionKey, drivers }: TeamRadioProps) {
         }
 
         // Sort newest first
-        const sorted = [...data].sort(
+        const sorted = [...data].toSorted(
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
         );
         setEntries(sorted.slice(0, 50));

@@ -9,7 +9,7 @@ export default function WeatherChart({ data }: WeatherChartProps) {
 
   const sorted = [...data]
     .filter((d) => d.date && (d.air_temperature != null || d.track_temperature != null))
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    .toSorted((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   if (sorted.length < 2) return null;
 

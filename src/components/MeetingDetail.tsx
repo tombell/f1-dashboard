@@ -56,7 +56,7 @@ export default function MeetingDetail({
   // Sort sessions by date
   const sortedSessions = useMemo(
     () =>
-      [...sessions].sort(
+      [...sessions].toSorted(
         (a, b) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime(),
       ),
     [sessions],

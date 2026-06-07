@@ -37,7 +37,7 @@ export default function RaceControl({ sessionKey }: RaceControlProps) {
       try {
         const data = await getRaceControl(sessionKey);
         if (!mounted) return;
-        setMessages(data.slice(-100).reverse()); // cap at 100, newest first
+        setMessages(data.slice(-100).toReversed()); // cap at 100, newest first
       } catch {
         // silent
       }
