@@ -67,9 +67,10 @@ function DriverCell({
 
 export default function LiveDataSections({
   sessionKey,
-  _meetingKey,
+  meetingKey,
   sessionName,
 }: LiveDataSectionsProps) {
+  void meetingKey; // reserved for future use
   const [laps, setLaps] = useState<Lap[]>([]);
   const [pits, setPits] = useState<PitStop[]>([]);
   const [stints, setStints] = useState<Stint[]>([]);

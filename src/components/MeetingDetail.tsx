@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import type React from "react";
 
 import { getSessions, getSessionResults, getStartingGrid, getDrivers } from "@/api/openf1";
@@ -53,6 +53,10 @@ export default function MeetingDetail({
   const [results, setResults] = useState<SessionResult[]>([]);
   const [grid, setGrid] = useState<SessionResult[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Pre-season testing — no historical data available
+  const isTesting =
+    meeting.meeting_name?.includes("Testing") || meeting.meeting_official_name?.includes("Testing");
 
   // Sort sessions by date
   const sortedSessions = useMemo(
@@ -249,13 +253,16 @@ export default function MeetingDetail({
               key={s.session_key}
               type="button"
               data-session-key={s.session_key}
-              onClick={handleSessionClickEvent}
-              onKeyDown={handleSessionClickEvent}
-              aria-label={s.session_name}
-              className={`w-full text-left bg-f1-bg2 border rounded-lg px-4 py-3 flex justify-between items-center cursor-pointer transition-colors font-inherit ${
-                isSelected
-                  ? "border-f1-blue bg-f1-bg3"
-                  : "border-f1-border hover:border-f1-blue hover:bg-f1-bg3"
+              onClick={isTesting ? undefined : handleSessionClickEvent}
+              onKeyDown={isTesting ? undefined : handleSessionClickEvent}
+              disabled={isTesting}
+              aria-label={isTesting ? `${s.session_name} (no data available)` : s.session_name}
+              className={`w-full text-left bg-f1-bg2 border rounded-lg px-4 py-3 flex justify-between items-center transition-colors font-inherit ${
+                isTesting
+                  ? "border-f1-border opacity-40 cursor-not-allowed"
+                  : isSelected
+                    ? "border-f1-blue bg-f1-bg3 cursor-pointer"
+                    : "border-f1-border hover:border-f1-blue hover:bg-f1-bg3 cursor-pointer"
               }`}
             >
               <div>
@@ -275,7 +282,7 @@ export default function MeetingDetail({
       {/* Results */}
       {loading && <div className="text-center py-4 text-f1-dim text-sm">Loading sessions...</div>}
 
-      {!loading && selectedSession && (
+      {!loading && selectedSession && !isTesting && (
         <>
           {sessionHasResults && (
             <SessionResults
@@ -292,6 +299,12 @@ export default function MeetingDetail({
             sessionName={selectedSession.session_name}
           />
         </>
+      )}
+
+      {!loading && isTesting && (
+        <div className="text-center py-6 text-f1-dim text-sm">
+          No live timing data available for pre-season testing sessions.
+        </div>
       )}
 
       {!loading && selectedSession && !sessionHasResults && (

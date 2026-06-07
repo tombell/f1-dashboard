@@ -217,14 +217,24 @@ function PracticeTable({ results }: { results: SessionResult[] }) {
               </span>
               <span className="ml-1.5 text-[11px] text-f1-dim">· {r.team_name}</span>
             </td>
-            <td className="px-3 py-2 text-xs">{r.lap_count ?? "-"}</td>
+            <td className="px-3 py-2 text-xs">{r.number_of_laps ?? r.lap_count ?? "-"}</td>
             <td className="px-3 py-2 text-xs text-f1-dim tabular-nums">
               {r.duration != null && !Array.isArray(r.duration)
                 ? `${(r.duration as number).toFixed(3)}s`
                 : "-"}
             </td>
             <td className="px-3 py-2 text-xs text-f1-orange">
-              {r.gap === "0" ? "—" : r.gap || "-"}
+              {r.gap_to_leader != null
+                ? typeof r.gap_to_leader === "string"
+                  ? r.gap_to_leader
+                  : r.gap_to_leader === 0
+                    ? "—"
+                    : `${Number(r.gap_to_leader).toFixed(3)}s`
+                : typeof r.gap === "string"
+                  ? r.gap
+                  : r.gap === "0"
+                    ? "—"
+                    : r.gap || "-"}
             </td>
           </tr>
         ))}
@@ -385,10 +395,20 @@ function RaceTable({ results }: { results: SessionResult[] }) {
                 </span>
                 <span className="ml-1.5 text-[11px] text-f1-dim">· {r.team_name}</span>
               </td>
-              <td className="px-3 py-2 text-xs">{r.lap_count ?? "-"}</td>
+              <td className="px-3 py-2 text-xs">{r.number_of_laps ?? r.lap_count ?? "-"}</td>
               <td className="px-3 py-2 text-xs text-f1-dim tabular-nums">{time}</td>
               <td className="px-3 py-2 text-xs text-f1-orange">
-                {r.gap === "0" ? "—" : r.gap || "-"}
+                {r.gap_to_leader != null
+                  ? typeof r.gap_to_leader === "string"
+                    ? r.gap_to_leader
+                    : r.gap_to_leader === 0
+                      ? "—"
+                      : `${Number(r.gap_to_leader).toFixed(3)}s`
+                  : typeof r.gap === "string"
+                    ? r.gap
+                    : r.gap === "0"
+                      ? "—"
+                      : r.gap || "-"}
               </td>
             </tr>
           );
