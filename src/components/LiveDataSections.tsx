@@ -359,10 +359,11 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
                             style={{
                               width: `${pct}%`,
                               backgroundColor: compoundColor(st.compound),
+                              opacity: 0.6,
                               marginLeft: idx > 0 ? 2 : 0,
                               borderRadius: sorted.length === 1 ? undefined : idx === 0 ? "4px 0 0 4px" : idx === sorted.length - 1 ? "0 4px 4px 0" : undefined,
                             }}
-                            className="flex items-center justify-center text-[10px] font-bold text-black/70 border-r border-black/20 last:border-r-0 shrink-0"
+                            className="flex items-center justify-center text-[10px] font-bold text-black/70 border-r border-black/10 last:border-r-0 shrink-0"
                             title={`${st.compound} L${st.lap_start}–${st.lap_end}`}
                           >
                             {pct > 12 ? st.compound : ""}
@@ -377,7 +378,7 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
                         <span key={st.stint_number}>
                           <span
                             className="inline-block w-2 h-2 rounded-sm mr-1 align-middle"
-                            style={{ backgroundColor: compoundColor(st.compound) }}
+                            style={{ backgroundColor: compoundColor(st.compound), opacity: 0.6 }}
                           />
                           {st.compound} L{st.lap_start}–{st.lap_end}
                         </span>
@@ -398,7 +399,7 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
                               style={{
                                 height: `${height}px`,
                                 backgroundColor: compoundColor(comp),
-                                opacity: l.lap_duration === fastestLap ? 1 : 0.6,
+                                opacity: comp ? 0.55 : 0.3,
                               }}
                               title={`L${l.lap_number}: ${l.lap_duration?.toFixed(3)}s ${comp}`}
                             />
