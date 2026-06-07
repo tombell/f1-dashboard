@@ -4,6 +4,7 @@ import type { Session } from "@/types/api";
 
 interface HeaderProps {
   session: Session | null;
+  currentLap?: number;
   onRefresh: () => void;
 }
 
@@ -22,7 +23,7 @@ function isLive(dateStart: string, dateEnd: string): boolean {
   return now >= new Date(dateStart).getTime() && now <= new Date(dateEnd).getTime();
 }
 
-export default function Header({ session, onRefresh }: HeaderProps) {
+export default function Header({ session, currentLap, onRefresh }: HeaderProps) {
   const location = useLocation();
   const [countdown, setCountdown] = useState("");
   const isHistorical = location.pathname === "/historical";
@@ -74,10 +75,13 @@ export default function Header({ session, onRefresh }: HeaderProps) {
             <span>{session.meeting_name || "—"}</span>
             <span>{session.session_name}</span>
             {live && (
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-f1-green animate-pulse" />
-                LIVE
-              </span>
+              <>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-f1-green animate-pulse" />
+                  LIVE
+                </span>
+                {currentLap ? <span className="text-f1-bright font-semibold">Lap {currentLap}</span> : null}
+              </>
             )}
             {countdown && (
               <span className="text-f1-red font-semibold min-w-[80px] text-right">{countdown}</span>

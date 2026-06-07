@@ -18,6 +18,7 @@ export default function LiveDashboard() {
   const [positionChanges, setPositionChanges] = useState<Map<number, "up" | "down">>(new Map());
   const [recentPits, setRecentPits] = useState<Set<number>>(new Set());
   const [fastestLapDriver, setFastestLapDriver] = useState<number | null>(null);
+  const [currentLap, setCurrentLap] = useState<number>(0);
   const [searchParams] = useSearchParams();
   const driverFallback = useRef<Map<number, Driver> | null>(null);
   const prevPositions = useRef<Map<number, number> | null>(null);
@@ -114,6 +115,8 @@ export default function LiveDashboard() {
           }
           const flDriver = fastestLapRef.current?.driver ?? null;
           if (flDriver !== fastestLapDriver) setFastestLapDriver(flDriver);
+          const cl = fastestLapRef.current?.maxLap ?? 0;
+          if (cl !== currentLap) setCurrentLap(cl);
 
           // Detect position changes
           const newPosMap = new Map<number, number>();
@@ -181,7 +184,7 @@ export default function LiveDashboard() {
 
   return (
     <div className="flex flex-col gap-3 p-4 h-full min-h-screen">
-      <Header session={session} onRefresh={() => setError(null)} />
+      <Header session={session} currentLap={currentLap} onRefresh={() => setError(null)} />
       <div className="flex items-center gap-3 flex-wrap">
         <WeatherBar weather={latestWeather} />
         <TrackClock />
