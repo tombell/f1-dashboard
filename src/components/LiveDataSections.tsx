@@ -306,7 +306,7 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
         </LiveSection>
       )}
 
-      {/* Tyre Stints */}
+      {/* Tyre Stints + Lap Chart */}
       {hasStints && (
         <LiveSection
           title="🏎️ Tyre Stints"
@@ -315,39 +315,100 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
           onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !c[k] }))}
           count={stintsByDriver.size}
         >
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-f1-bg3 text-[11px] text-f1-dim font-semibold uppercase tracking-wider">
-                <th className="px-3 py-2 text-left">Driver</th>
-                <th className="px-3 py-2 text-left">Stint</th>
-                <th className="px-3 py-2 text-left">Laps</th>
-                <th className="px-3 py-2 text-left">Compound</th>
-                <th className="px-3 py-2 text-left">Age</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...stintsByDriver.entries()].map(([dn, driverStints]) =>
-                driverStints.map((s) => (
-                  <tr
-                    key={`${dn}-${s.stint_number}`}
-                    className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3"
-                  >
-                    <td className="px-3 py-2 text-xs font-semibold text-f1-bright"><DriverCell driverNumber={dn} /></td>
-                    <td className="px-3 py-2 text-xs text-f1-dim">{s.stint_number}</td>
-                    <td className="px-3 py-2 text-xs">
-                      L{s.lap_start}–{s.lap_end}
-                    </td>
-                    <td className="px-3 py-2 text-xs">
-                      <span className="font-semibold" style={{ color: compoundColor(s.compound) }}>
-                        {s.compound || s.compound_visual || "-"}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-xs text-f1-dim">{s.tyre_age_at_start} laps</td>
-                  </tr>
-                )),
-              )}
-            </tbody>
-          </table>
+          <div className="divide-y divide-f1-border">
+            {[...stintsByDriver.entries()]
+              .sort(([, a], [, b]) => (a[0].lap_start ?? 0) - (b[0].lap_start ?? 0))
+              .map(([dn, driverStints]) => {
+                // Sort stints by stint_number
+                const sorted = [...driverStints].sort(
+                  (a, b) => a.stint_number - b.stint_number,
+                );
+                const totalLaps = sorted.reduce((s, st) => s + (st.lap_end - st.lap_start + 1), 0);
+
+                // Build lap → compound map
+                const lapCompound = new Map<number, string>();
+                for (const st of sorted) {
+                  for (let n = st.lap_start; n <= st.lap_end; n++) {
+                    lapCompound.set(n, st.compound);
+                  }
+                }
+
+                // Get this driver's laps for the mini chart
+                const driverLaps = laps
+                  .filter((l) => l.driver_number === dn && l.lap_duration != null && !l.is_pitlap)
+                  .sort((a, b) => a.lap_number - b.lap_number);
+                const fastestLap = driverLaps.reduce(
+                  (best, l) => (l.lap_duration! < best ? l.lap_duration! : best),
+                  Infinity,
+                );
+
+                return (
+                  <div key={dn} className="px-4 py-3">
+                    {/* Driver header */}
+                    <div className="mb-2">
+                      <DriverCell driverNumber={dn} />
+                    </div>
+
+                    {/* Stint bar — coloured segments proportional to stint length */}
+                    <div className="flex h-5 rounded overflow-hidden mb-1.5">
+                      {sorted.map((st) => {
+                        const pct = ((st.lap_end - st.lap_start + 1) / totalLaps) * 100;
+                        return (
+                          <div
+                            key={st.stint_number}
+                            style={{
+                              width: `${pct}%`,
+                              backgroundColor: compoundColor(st.compound),
+                              opacity: 0.85,
+                            }}
+                            className="flex items-center justify-center text-[9px] font-bold text-black/70"
+                            title={`${st.compound} L${st.lap_start}–${st.lap_end}`}
+                          >
+                            {pct > 15 ? st.compound?.slice(0, 2) : ""}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Stint labels */}
+                    <div className="flex gap-2 text-[10px] text-f1-dim mb-2 flex-wrap">
+                      {sorted.map((st) => (
+                        <span key={st.stint_number}>
+                          <span
+                            className="inline-block w-2 h-2 rounded-sm mr-1 align-middle"
+                            style={{ backgroundColor: compoundColor(st.compound) }}
+                          />
+                          {st.compound} L{st.lap_start}–{st.lap_end}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Lap time mini chart */}
+                    {driverLaps.length > 1 && fastestLap < Infinity && (
+                      <div className="flex items-end gap-[1px] h-8">
+                        {driverLaps.map((l) => {
+                          const comp = lapCompound.get(l.lap_number) || "";
+                          const ratio = fastestLap / l.lap_duration!;
+                          const height = Math.max(4, Math.round(ratio * 28));
+                          return (
+                            <div
+                              key={l.lap_number}
+                              className="w-[3px] rounded-t-sm shrink-0"
+                              style={{
+                                height: `${height}px`,
+                                backgroundColor: compoundColor(comp),
+                                opacity: l.lap_duration === fastestLap ? 1 : 0.6,
+                              }}
+                              title={`L${l.lap_number}: ${l.lap_duration?.toFixed(3)}s ${comp}`}
+                            />
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
         </LiveSection>
       )}
 
