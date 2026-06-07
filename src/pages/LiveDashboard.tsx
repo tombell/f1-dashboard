@@ -40,7 +40,7 @@ export default function LiveDashboard() {
   const [fastestLapDriver, setFastestLapDriver] = useState<number | null>(null);
   const [currentLap, setCurrentLap] = useState<number>(0);
   const [currentTyres, setCurrentTyres] = useState<Map<number, string>>(new Map());
-  const [driverPenalties, setDriverPenalties] = useState<Map<number, string>>(new Map());
+  const [driverPenalties, setDriverPenalties] = useState<Map<number, string[]>>(new Map());
   const [searchParams] = useSearchParams();
   const driverFallback = useRef<Map<number, Driver> | null>(null);
   const prevPositions = useRef<Map<number, number> | null>(null);
@@ -270,7 +270,9 @@ export default function LiveDashboard() {
           setCurrentTyres(tyreMap);
 
           // Parse penalty status from race control messages
-          const penalties = new Map<number, string>();
+          const penalties = new Map<number, string[]>();
+          const invCount = new Map<number, number>();
+          const penCount = new Map<number, number>();
           if (Array.isArray(rc)) {
             // Extract driver number from message text when field is null
             const extractDriver = (entry: any): number | null => {
@@ -278,32 +280,37 @@ export default function LiveDashboard() {
               const match = (entry.message || "").match(/CAR\s+(\d+)/);
               return match ? parseInt(match[1]) : null;
             };
-            // For each driver the NEWEST message decides their status.
-            // If the latest says NFA/served → no badge; only INV/PEN if latest says so.
-            // Iterate newest-first, then skip any driver we've already recorded.
-            const sorted = [...rc].toReversed();
-            for (const entry of sorted) {
+            // Count open investigations and unresolved penalties per driver
+            // across ALL messages (order doesn't matter for addition/subtraction).
+            for (const entry of rc) {
               const dn = extractDriver(entry);
-              if (!dn || penalties.has(dn)) continue;
+              if (!dn) continue;
               const msg = entry.message || "";
-              // Resolution messages — don't set any status (driver is clear)
-              if (
-                msg.includes("NO FURTHER ACTION") ||
-                msg.includes("NO FURTHER INVESTIGATION") ||
-                msg.includes("PENALTY SERVED")
-              ) {
-                penalties.set(dn, "CLEAR");
-                continue;
-              }
               if (msg.includes("UNDER INVESTIGATION")) {
-                penalties.set(dn, "INVESTIGATION");
-              } else if (
+                invCount.set(dn, (invCount.get(dn) || 0) + 1);
+              } else if (msg.includes("NO FURTHER ACTION") || msg.includes("NO FURTHER INVESTIGATION")) {
+                invCount.set(dn, (invCount.get(dn) || 0) - 1);
+              }
+              // Penalty messages also close the investigation
+              const isPenalty =
                 msg.includes("TIME PENALTY") ||
                 msg.includes("DRIVE THROUGH PENALTY") ||
-                msg.includes("STOP-GO PENALTY")
-              ) {
-                penalties.set(dn, "PENALTY");
+                msg.includes("STOP-GO PENALTY");
+              if (isPenalty && !msg.includes("SERVED") && !msg.includes("PENALTY SERVED")) {
+                penCount.set(dn, (penCount.get(dn) || 0) + 1);
+                invCount.set(dn, (invCount.get(dn) || 0) - 1);
               }
+              if (msg.includes("PENALTY SERVED")) {
+                penCount.set(dn, (penCount.get(dn) || 0) - 1);
+              }
+            }
+            // Build status arrays from final counts
+            const allDns = new Set([...invCount.keys(), ...penCount.keys()]);
+            for (const dn of allDns) {
+              const statuses: string[] = [];
+              if ((invCount.get(dn) || 0) > 0) statuses.push("INVESTIGATION");
+              if ((penCount.get(dn) || 0) > 0) statuses.push("PENALTY");
+              if (statuses.length > 0) penalties.set(dn, statuses);
             }
           }
           setDriverPenalties(penalties);

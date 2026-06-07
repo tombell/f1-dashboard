@@ -11,7 +11,7 @@ interface TimingTowerProps {
   fastestLapDriver: number | null;
   currentTyres: Map<number, string>;
   retiredDrivers: Set<number>;
-  driverPenalties: Map<number, string>;
+  driverPenalties: Map<number, string[]>;
 }
 
 const TYRE_COLORS: Record<string, string> = {
@@ -144,26 +144,27 @@ export default function TimingTower({
                   </span>
                 )}
                 {(() => {
-                  const pen = driverPenalties.get(driver.driver_number);
-                  if (pen === "INVESTIGATION")
-                    return (
-                      <span
-                        className="text-[10px] bg-yellow-600 text-white font-bold px-1.5 rounded leading-none"
-                        title="Under investigation"
-                      >
-                        INV
-                      </span>
-                    );
-                  if (pen === "PENALTY")
-                    return (
-                      <span
-                        className="text-[10px] bg-orange-600 text-white font-bold px-1.5 rounded leading-none"
-                        title="Penalty applied"
-                      >
-                        PEN
-                      </span>
-                    );
-                  return null;
+                  const pens = driverPenalties.get(driver.driver_number);
+                  return (
+                    <>
+                      {pens?.includes("INVESTIGATION") && (
+                        <span
+                          className="text-[10px] bg-yellow-600 text-white font-bold px-1.5 rounded leading-none"
+                          title="Under investigation"
+                        >
+                          INV
+                        </span>
+                      )}
+                      {pens?.includes("PENALTY") && (
+                        <span
+                          className="text-[10px] bg-orange-600 text-white font-bold px-1.5 rounded leading-none"
+                          title="Penalty applied"
+                        >
+                          PEN
+                        </span>
+                      )}
+                    </>
+                  );
                 })()}
                 <span className="text-f1-dim text-[11px]">{driver.team_name}</span>
               </span>
