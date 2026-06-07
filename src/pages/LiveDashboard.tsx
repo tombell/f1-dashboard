@@ -294,6 +294,7 @@ export default function LiveDashboard() {
                 msg.includes("NO FURTHER INVESTIGATION") ||
                 msg.includes("PENALTY SERVED")
               ) {
+                penalties.set(dn, "CLEAR");
                 continue;
               }
               if (msg.includes("UNDER INVESTIGATION")) {
