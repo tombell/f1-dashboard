@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+
 import type { Driver, Position, Interval } from "@/types/api";
 
 interface TimingTowerProps {
@@ -46,7 +47,17 @@ function teamColor(teamName: string): string {
   return TEAM_COLORS[teamName] || "#666688";
 }
 
-export default function TimingTower({ drivers, positions, intervals, positionChanges, recentPits, fastestLapDriver, currentTyres, retiredDrivers, driverPenalties }: TimingTowerProps) {
+export default function TimingTower({
+  drivers,
+  positions,
+  intervals,
+  positionChanges,
+  recentPits,
+  fastestLapDriver,
+  currentTyres,
+  retiredDrivers,
+  driverPenalties,
+}: TimingTowerProps) {
   // Build a map of driver_number -> last interval
   const intervalMap = useMemo(() => {
     const map = new Map<number, Interval>();
@@ -58,8 +69,8 @@ export default function TimingTower({ drivers, positions, intervals, positionCha
 
   // Sort drivers by position, retired drivers at the bottom
   const sorted = useMemo(() => {
-    const active = [...drivers].filter(d => !retiredDrivers.has(d.driver_number));
-    const retired = [...drivers].filter(d => retiredDrivers.has(d.driver_number));
+    const active = [...drivers].filter((d) => !retiredDrivers.has(d.driver_number));
+    const retired = [...drivers].filter((d) => retiredDrivers.has(d.driver_number));
     active.sort((a, b) => {
       const pa = positions.get(a.driver_number)?.position ?? 99;
       const pb = positions.get(b.driver_number)?.position ?? 99;
@@ -99,11 +110,8 @@ export default function TimingTower({ drivers, positions, intervals, positionCha
           const iv = intervalMap.get(driver.driver_number);
           const color = teamColor(driver.team_name);
           const change = positionChanges.get(driver.driver_number);
-          const changeClass = change === "up"
-            ? "animate-pos-up"
-            : change === "down"
-              ? "animate-pos-down"
-              : "";
+          const changeClass =
+            change === "up" ? "animate-pos-up" : change === "down" ? "animate-pos-down" : "";
 
           return (
             <div
@@ -115,29 +123,55 @@ export default function TimingTower({ drivers, positions, intervals, positionCha
               <span className="flex-1 flex items-center gap-2">
                 <span className="font-semibold text-f1-bright">{driver.name_acronym}</span>
                 {recentPits.has(driver.driver_number) && (
-                  <span className="text-[10px] bg-f1-blue/20 text-f1-blue font-bold px-1 rounded leading-none">PIT</span>
+                  <span className="text-[10px] bg-f1-blue/20 text-f1-blue font-bold px-1 rounded leading-none">
+                    PIT
+                  </span>
                 )}
                 {(() => {
                   const compound = currentTyres.get(driver.driver_number);
                   if (!compound) return null;
                   const color = TYRE_COLORS[compound.toUpperCase()] || "bg-gray-500";
                   const label = TYRE_LABELS[compound.toUpperCase()] || compound[0];
-                  return <span className={`text-[10px] font-bold px-1 rounded leading-none ${color}`}>{label}</span>;
+                  return (
+                    <span className={`text-[10px] font-bold px-1 rounded leading-none ${color}`}>
+                      {label}
+                    </span>
+                  );
                 })()}
                 {retiredDrivers.has(driver.driver_number) && (
-                  <span className="text-[10px] bg-red-600/30 text-red-400 font-bold px-1.5 rounded leading-none">OUT</span>
+                  <span className="text-[10px] bg-red-600/30 text-red-400 font-bold px-1.5 rounded leading-none">
+                    OUT
+                  </span>
                 )}
                 {(() => {
                   const pen = driverPenalties.get(driver.driver_number);
-                  if (pen === "INVESTIGATION") return <span className="text-[10px] bg-yellow-600 text-white font-bold px-1.5 rounded leading-none" title="Under investigation">INV</span>;
-                  if (pen === "PENALTY") return <span className="text-[10px] bg-orange-600 text-white font-bold px-1.5 rounded leading-none" title="Penalty applied">PEN</span>;
+                  if (pen === "INVESTIGATION")
+                    return (
+                      <span
+                        className="text-[10px] bg-yellow-600 text-white font-bold px-1.5 rounded leading-none"
+                        title="Under investigation"
+                      >
+                        INV
+                      </span>
+                    );
+                  if (pen === "PENALTY")
+                    return (
+                      <span
+                        className="text-[10px] bg-orange-600 text-white font-bold px-1.5 rounded leading-none"
+                        title="Penalty applied"
+                      >
+                        PEN
+                      </span>
+                    );
                   return null;
                 })()}
                 <span className="text-f1-dim text-[11px]">{driver.team_name}</span>
               </span>
               <span className="w-[20px] text-center">
                 {fastestLapDriver === driver.driver_number && (
-                  <span className="text-[11px]" title="Fastest lap">⚡</span>
+                  <span className="text-[11px]" title="Fastest lap">
+                    ⚡
+                  </span>
                 )}
               </span>
               <span className="w-[50px] text-right text-f1-orange">

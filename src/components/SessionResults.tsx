@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+
 import type { SessionResult } from "@/types/api";
 
 interface SessionResultsProps {
@@ -80,7 +81,9 @@ export default function SessionResults({
           <span>{sessionName} Results</span>
           <span className="flex items-center gap-2">
             <span className="text-f1-dim text-[11px]">{results.length} drivers</span>
-            <span className={`transition-transform ${resultsOpen ? "rotate-0" : "-rotate-90"}`}>▼</span>
+            <span className={`transition-transform ${resultsOpen ? "rotate-0" : "-rotate-90"}`}>
+              ▼
+            </span>
           </span>
         </button>
 
@@ -107,7 +110,9 @@ export default function SessionResults({
             className="w-full text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center cursor-pointer bg-transparent border-t-0 border-x-0 hover:bg-f1-bg3 transition-colors"
           >
             <span>🏁 Starting Grid ({grid.length} drivers)</span>
-            <span className={`transition-transform ${gridOpen ? "rotate-0" : "-rotate-90"}`}>▼</span>
+            <span className={`transition-transform ${gridOpen ? "rotate-0" : "-rotate-90"}`}>
+              ▼
+            </span>
           </button>
           {gridOpen && (
             <table className="w-full border-collapse">

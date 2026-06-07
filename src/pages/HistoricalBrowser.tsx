@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
+
+import { getMeetings, getLatestSession } from "@/api/openf1";
 import Header from "@/components/Header";
 import MeetingCalendar from "@/components/MeetingCalendar";
 import MeetingDetail from "@/components/MeetingDetail";
 import StandingsView from "@/components/StandingsView";
-import { getMeetings, getLatestSession } from "@/api/openf1";
 import type { Meeting, Session } from "@/types/api";
 
 type ViewTab = "races" | "standings";

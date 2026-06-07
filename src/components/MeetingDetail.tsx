@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
-import SessionResults from "@/components/SessionResults";
-import LiveDataSections from "@/components/LiveDataSections";
+
 import { getSessions, getSessionResults, getStartingGrid, getDrivers } from "@/api/openf1";
+import LiveDataSections from "@/components/LiveDataSections";
+import SessionResults from "@/components/SessionResults";
 import type { Meeting, Session, SessionResult } from "@/types/api";
 
 interface MeetingDetailProps {
@@ -112,7 +113,10 @@ export default function MeetingDetail({
         if (!mounted) return;
 
         // Build driver name/team lookup
-        const nameMap = new Map<number, { broadcast_name: string; full_name: string; team_name: string; team_colour: string }>();
+        const nameMap = new Map<
+          number,
+          { broadcast_name: string; full_name: string; team_name: string; team_colour: string }
+        >();
         for (const d of drivers) {
           nameMap.set(d.driver_number, {
             broadcast_name: d.broadcast_name,

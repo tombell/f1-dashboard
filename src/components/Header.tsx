@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+
 import type { Session } from "@/types/api";
 
 interface HeaderProps {
@@ -80,7 +81,9 @@ export default function Header({ session, currentLap, onRefresh }: HeaderProps) 
                   <span className="w-2 h-2 rounded-full bg-f1-green animate-pulse" />
                   LIVE
                 </span>
-                {currentLap ? <span className="text-f1-bright font-semibold">Lap {currentLap}</span> : null}
+                {currentLap ? (
+                  <span className="text-f1-bright font-semibold">Lap {currentLap}</span>
+                ) : null}
               </>
             )}
             {countdown && (

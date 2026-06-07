@@ -1,13 +1,31 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+
+import {
+  getLatestSession,
+  getDrivers,
+  getPositions,
+  getIntervals,
+  getWeather,
+  getPitStops,
+  getStints,
+  getRaceControl,
+} from "@/api/openf1";
 import Header from "@/components/Header";
-import WeatherBar from "@/components/WeatherBar";
-import TimingTower from "@/components/TimingTower";
 import RaceControl from "@/components/RaceControl";
 import TeamRadio from "@/components/TeamRadio";
+import TimingTower from "@/components/TimingTower";
 import TrackClock from "@/components/TrackClock";
-import { getLatestSession, getDrivers, getPositions, getIntervals, getWeather, getPitStops, getStints, getRaceControl } from "@/api/openf1";
-import type { Session, Driver, Position, Interval, WeatherReading, PitStop, Stint } from "@/types/api";
+import WeatherBar from "@/components/WeatherBar";
+import type {
+  Session,
+  Driver,
+  Position,
+  Interval,
+  WeatherReading,
+  PitStop,
+  Stint,
+} from "@/types/api";
 
 export default function LiveDashboard() {
   const [session, setSession] = useState<Session | null>(null);
@@ -92,14 +110,13 @@ export default function LiveDashboard() {
           // Track fastest lap
           const maxLap = fastestLapRef.current?.maxLap ?? 0;
           try {
-            const lapData = await (await fetch(`/v1/laps?session_key=${sk}&lap_number>=${maxLap}`)).json();
+            const lapData = await (
+              await fetch(`/v1/laps?session_key=${sk}&lap_number>=${maxLap}`)
+            ).json();
             if (Array.isArray(lapData) && lapData.length > 0) {
               for (const lap of lapData) {
                 if (lap.lap_duration == null) continue;
-                if (
-                  !fastestLapRef.current ||
-                  lap.lap_duration < fastestLapRef.current.time
-                ) {
+                if (!fastestLapRef.current || lap.lap_duration < fastestLapRef.current.time) {
                   fastestLapRef.current = {
                     time: lap.lap_duration,
                     driver: lap.driver_number,
@@ -190,40 +207,33 @@ export default function LiveDashboard() {
             const stale = new Set<number>();
             for (const drv of d) {
               const lastUpd = lastUpdateTimes.current.get(drv.driver_number);
-              if (lastUpd && (now - lastUpd) > staleTimeout) {
+              if (lastUpd && now - lastUpd > staleTimeout) {
                 stale.add(drv.driver_number);
               }
             }
             let sessionActive = false;
             for (const drv of d) {
               const lastUpd = lastUpdateTimes.current.get(drv.driver_number);
-              if (lastUpd && (now - lastUpd) <= activeTimeout) {
+              if (lastUpd && now - lastUpd <= activeTimeout) {
                 sessionActive = true;
                 break;
               }
             }
             // Don't flag retirements during red flag (data stops for everyone)
-            const isRedFlag = Array.isArray(rc) && rc.some(
-              (r: any) => (r.message || "").includes("RED FLAG")
-            );
+            const isRedFlag =
+              Array.isArray(rc) && rc.some((r: any) => (r.message || "").includes("RED FLAG"));
             if (isRedFlag) {
               // During red flag: compare lap counts to find genuine retirees.
               // Drivers who retired stopped lapping early; those who stopped for
               // the red flag are near the leader's lap count.
-              const maxLap = Math.max(
-                ...stints.map((s: Stint) => s.lap_end ?? 0),
-                0
-              );
+              const maxLap = Math.max(...stints.map((s: Stint) => s.lap_end ?? 0), 0);
               const stale = new Set<number>();
               for (const drv of d) {
                 const driverStints = stints.filter(
-                  (s: Stint) => s.driver_number === drv.driver_number
+                  (s: Stint) => s.driver_number === drv.driver_number,
                 );
                 if (driverStints.length === 0) continue;
-                const lastLap = Math.max(
-                  ...driverStints.map((s: Stint) => s.lap_end ?? 0),
-                  0
-                );
+                const lastLap = Math.max(...driverStints.map((s: Stint) => s.lap_end ?? 0), 0);
                 // 3+ laps behind the leader = retired before the red flag
                 if (lastLap > 0 && maxLap - lastLap >= 3) {
                   stale.add(drv.driver_number);
@@ -275,7 +285,11 @@ export default function LiveDashboard() {
               const msg = entry.message || "";
               if (msg.includes("UNDER INVESTIGATION")) {
                 penalties.set(dn, "INVESTIGATION");
-              } else if (msg.includes("TIME PENALTY") || msg.includes("DRIVE THROUGH PENALTY") || msg.includes("STOP-GO PENALTY")) {
+              } else if (
+                msg.includes("TIME PENALTY") ||
+                msg.includes("DRIVE THROUGH PENALTY") ||
+                msg.includes("STOP-GO PENALTY")
+              ) {
                 if (!msg.includes("SERVED") && !msg.includes("PENALTY SERVED")) {
                   penalties.set(dn, "PENALTY");
                 }
@@ -289,7 +303,10 @@ export default function LiveDashboard() {
               if (msg.includes("PENALTY SERVED") && penalties.get(dn) === "PENALTY") {
                 penalties.delete(dn);
               }
-              if (msg.includes("NO FURTHER INVESTIGATION") && penalties.get(dn) === "INVESTIGATION") {
+              if (
+                msg.includes("NO FURTHER INVESTIGATION") &&
+                penalties.get(dn) === "INVESTIGATION"
+              ) {
                 penalties.delete(dn);
               }
             }
@@ -340,7 +357,17 @@ export default function LiveDashboard() {
         </div>
       )}
       <div className="flex-1 grid grid-cols-[1fr_2fr] gap-3 min-h-0 max-lg:grid-cols-1">
-        <TimingTower drivers={drivers} positions={latestPositions} intervals={intervals} positionChanges={positionChanges} recentPits={recentPits} fastestLapDriver={fastestLapDriver} currentTyres={currentTyres} retiredDrivers={retiredDrivers} driverPenalties={driverPenalties} />
+        <TimingTower
+          drivers={drivers}
+          positions={latestPositions}
+          intervals={intervals}
+          positionChanges={positionChanges}
+          recentPits={recentPits}
+          fastestLapDriver={fastestLapDriver}
+          currentTyres={currentTyres}
+          retiredDrivers={retiredDrivers}
+          driverPenalties={driverPenalties}
+        />
         <RaceControl sessionKey={session?.session_key} />
       </div>
       <TeamRadio sessionKey={session?.session_key} drivers={driverNameMap} />

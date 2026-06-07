@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+
 import { getRaceControl } from "@/api/openf1";
 import type { RaceControlMessage } from "@/types/api";
 

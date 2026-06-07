@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+
 import { getSessionResults, getSessions, getDrivers } from "@/api/openf1";
 import type { Meeting, Session, SessionResult } from "@/types/api";
 
@@ -51,7 +52,9 @@ async function loadMeeting(mk: number): Promise<LoadResult> {
 
     // Fetch race + sprint results in parallel
     const [raceSr, sprintSr] = await Promise.all([
-      raceSession ? getSessionResults(mk, raceSession.session_key) : Promise.resolve([] as SessionResult[]),
+      raceSession
+        ? getSessionResults(mk, raceSession.session_key)
+        : Promise.resolve([] as SessionResult[]),
       sprintSession && sprintSession.session_key !== raceSession?.session_key
         ? getSessionResults(mk, sprintSession.session_key)
         : Promise.resolve([] as SessionResult[]),

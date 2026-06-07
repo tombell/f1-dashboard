@@ -154,15 +154,7 @@ export default function WeatherChart({ data }: WeatherChartProps) {
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxHeight: "280px" }}>
         {/* Horizontal grid lines */}
         {gridYPositions.map((y) => (
-          <line
-            key={y}
-            x1={ML}
-            y1={y}
-            x2={W - MR}
-            y2={y}
-            stroke="#2a2a2a"
-            strokeWidth={1}
-          />
+          <line key={y} x1={ML} y1={y} x2={W - MR} y2={y} stroke="#2a2a2a" strokeWidth={1} />
         ))}
 
         {/* Rain bands */}
@@ -180,11 +172,7 @@ export default function WeatherChart({ data }: WeatherChartProps) {
 
         {/* Humidity fill */}
         {humidityPolyPoints && (
-          <polygon
-            points={humidityPolyPoints}
-            fill="#4caf50"
-            opacity={0.04}
-          />
+          <polygon points={humidityPolyPoints} fill="#4caf50" opacity={0.04} />
         )}
 
         {/* Humidity line (light dashed) */}
@@ -204,21 +192,10 @@ export default function WeatherChart({ data }: WeatherChartProps) {
         />
 
         {/* Track temperature line */}
-        <polyline
-          points={trackPoints}
-          fill="none"
-          stroke="#ef5350"
-          strokeWidth={2}
-          opacity={0.8}
-        />
+        <polyline points={trackPoints} fill="none" stroke="#ef5350" strokeWidth={2} opacity={0.8} />
 
         {/* Air temperature line */}
-        <polyline
-          points={airPoints}
-          fill="none"
-          stroke="#64b5f6"
-          strokeWidth={2}
-        />
+        <polyline points={airPoints} fill="none" stroke="#64b5f6" strokeWidth={2} />
 
         {/* Wind dots */}
         {windDots.map((d, i) => (
@@ -309,24 +286,66 @@ export default function WeatherChart({ data }: WeatherChartProps) {
 
         {/* Legend */}
         <g fontSize={10}>
-          <line x1={ML + 10} y1={MT + 10} x2={ML + 30} y2={MT + 10} stroke="#64b5f6" strokeWidth={2} />
-          <text x={ML + 34} y={MT + 13} fill="#aaa">Air</text>
+          <line
+            x1={ML + 10}
+            y1={MT + 10}
+            x2={ML + 30}
+            y2={MT + 10}
+            stroke="#64b5f6"
+            strokeWidth={2}
+          />
+          <text x={ML + 34} y={MT + 13} fill="#aaa">
+            Air
+          </text>
 
-          <line x1={ML + 10} y1={MT + 24} x2={ML + 30} y2={MT + 24} stroke="#ef5350" strokeWidth={2} opacity={0.8} />
-          <text x={ML + 34} y={MT + 27} fill="#aaa">Track</text>
+          <line
+            x1={ML + 10}
+            y1={MT + 24}
+            x2={ML + 30}
+            y2={MT + 24}
+            stroke="#ef5350"
+            strokeWidth={2}
+            opacity={0.8}
+          />
+          <text x={ML + 34} y={MT + 27} fill="#aaa">
+            Track
+          </text>
 
-          <line x1={ML + 10} y1={MT + 38} x2={ML + 30} y2={MT + 38} stroke="#4caf50" strokeWidth={1} strokeDasharray="3,3" opacity={0.4} />
-          <text x={ML + 34} y={MT + 41} fill="#aaa">Humidity</text>
+          <line
+            x1={ML + 10}
+            y1={MT + 38}
+            x2={ML + 30}
+            y2={MT + 38}
+            stroke="#4caf50"
+            strokeWidth={1}
+            strokeDasharray="3,3"
+            opacity={0.4}
+          />
+          <text x={ML + 34} y={MT + 41} fill="#aaa">
+            Humidity
+          </text>
 
           {/* Rain legend */}
           <rect x={ML + 10} y={MT + 44} width={20} height={8} fill="#2196f3" opacity={0.2} rx={1} />
-          <text x={ML + 34} y={MT + 52} fill="#aaa">Rain</text>
+          <text x={ML + 34} y={MT + 52} fill="#aaa">
+            Rain
+          </text>
 
           {windDots.length > 0 && (
             <>
-              <line x1={ML + 10} y1={MT + 60} x2={ML + 30} y2={MT + 60} stroke="#aaa" strokeWidth={0.8} opacity={0.4} />
+              <line
+                x1={ML + 10}
+                y1={MT + 60}
+                x2={ML + 30}
+                y2={MT + 60}
+                stroke="#aaa"
+                strokeWidth={0.8}
+                opacity={0.4}
+              />
               <circle cx={ML + 20} cy={MT + 60} r={1.5} fill="#aaa" opacity={0.6} />
-              <text x={ML + 34} y={MT + 63} fill="#aaa">Wind</text>
+              <text x={ML + 34} y={MT + 63} fill="#aaa">
+                Wind
+              </text>
             </>
           )}
         </g>

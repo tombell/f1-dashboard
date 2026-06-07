@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+
 import { getTeamRadio } from "@/api/openf1";
 import type { TeamRadioEntry } from "@/types/api";
 
@@ -13,42 +14,45 @@ export default function TeamRadio({ sessionKey, drivers }: TeamRadioProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const seenKeys = useRef<Set<string>>(new Set());
 
-  const playAudio = useCallback((recordingUrl: string) => {
-    if (playingUrl === recordingUrl) {
-      // Toggle pause
+  const playAudio = useCallback(
+    (recordingUrl: string) => {
+      if (playingUrl === recordingUrl) {
+        // Toggle pause
+        if (audioRef.current) {
+          audioRef.current.pause();
+          setPlayingUrl(null);
+        }
+        return;
+      }
+
+      // Build proxy URL: /v1/radio-proxy/{path after /static/}
+      const staticIdx = recordingUrl.indexOf("/static/");
+      if (staticIdx === -1) return;
+      const path = recordingUrl.slice(staticIdx + 8); // after "/static/"
+      const proxyUrl = `/v1/radio-proxy/${path}`;
+
+      // Stop previous if any
       if (audioRef.current) {
         audioRef.current.pause();
-        setPlayingUrl(null);
       }
-      return;
-    }
 
-    // Build proxy URL: /v1/radio-proxy/{path after /static/}
-    const staticIdx = recordingUrl.indexOf("/static/");
-    if (staticIdx === -1) return;
-    const path = recordingUrl.slice(staticIdx + 8); // after "/static/"
-    const proxyUrl = `/v1/radio-proxy/${path}`;
-
-    // Stop previous if any
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
-
-    const audio = new Audio(proxyUrl);
-    audioRef.current = audio;
-    audio.play().catch(() => {
-      // Autoplay may be blocked; user gesture should handle it
-    });
-    setPlayingUrl(recordingUrl);
-    audio.addEventListener("ended", () => {
-      setPlayingUrl(null);
-      audioRef.current = null;
-    });
-    audio.addEventListener("error", () => {
-      setPlayingUrl(null);
-      audioRef.current = null;
-    });
-  }, [playingUrl]);
+      const audio = new Audio(proxyUrl);
+      audioRef.current = audio;
+      audio.play().catch(() => {
+        // Autoplay may be blocked; user gesture should handle it
+      });
+      setPlayingUrl(recordingUrl);
+      audio.addEventListener("ended", () => {
+        setPlayingUrl(null);
+        audioRef.current = null;
+      });
+      audio.addEventListener("error", () => {
+        setPlayingUrl(null);
+        audioRef.current = null;
+      });
+    },
+    [playingUrl],
+  );
 
   // Clean up audio on unmount
   useEffect(() => {
@@ -78,7 +82,7 @@ export default function TeamRadio({ sessionKey, drivers }: TeamRadioProps) {
 
         // Sort newest first
         const sorted = [...data].sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
         );
         setEntries(sorted.slice(0, 50));
       } catch {
@@ -102,9 +106,7 @@ export default function TeamRadio({ sessionKey, drivers }: TeamRadioProps) {
     <div className="bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden">
       <div className="px-3 py-1.5 bg-f1-bg3 text-[11px] text-f1-dim uppercase tracking-wider flex items-center gap-2">
         <span>📻 Team Radio</span>
-        <span className="text-[10px] text-f1-dim font-normal">
-          ({entries.length})
-        </span>
+        <span className="text-[10px] text-f1-dim font-normal">({entries.length})</span>
       </div>
       <div className="max-h-[180px] overflow-y-auto">
         {entries.map((entry, i) => {
@@ -124,12 +126,8 @@ export default function TeamRadio({ sessionKey, drivers }: TeamRadioProps) {
               >
                 {isPlaying ? "⏸" : "▶"}
               </button>
-              <span className="font-semibold text-f1-bright w-[24px] shrink-0">
-                {driverName}
-              </span>
-              <span className="text-f1-dim text-[10px] ml-auto shrink-0">
-                {time}
-              </span>
+              <span className="font-semibold text-f1-bright w-[24px] shrink-0">{driverName}</span>
+              <span className="text-f1-dim text-[10px] ml-auto shrink-0">{time}</span>
             </div>
           );
         })}
