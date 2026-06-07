@@ -39,7 +39,7 @@ export default function LiveDashboard() {
   const [currentTyres, setCurrentTyres] = useState<Map<number, string>>(new Map());
   const [driverPenalties, setDriverPenalties] = useState<Map<number, string[]>>(new Map());
   const [searchParams] = useSearchParams();
-  const driverFallback = useRef<Map<number, Driver> | null>(null);
+  const driverFallbackCache = useRef<Map<number, Map<number, Driver>>>(new Map());
   const prevPositions = useRef<Map<number, number> | null>(null);
   const prevPitCounts = useRef<Map<number, number>>(new Map());
   const fastestLapRef = useRef<{ time: number; driver: number; maxLap: number } | null>(null);
@@ -72,24 +72,26 @@ export default function LiveDashboard() {
             getRaceControl(sk),
           ]);
 
-          // Enrich sparse driver data with fallback driver registry
-          if (d.length < 10) {
-            if (!driverFallback.current) {
+          // Enrich sparse driver data with meeting-scoped fallback
+          if (d.length < 10 && sess.meeting_key) {
+            let meetingCache = driverFallbackCache.current.get(sess.meeting_key);
+            if (!meetingCache) {
               try {
-                const allDrivers = await getDrivers();
-                driverFallback.current = new Map();
-                for (const dr of allDrivers) {
-                  if (!driverFallback.current.has(dr.driver_number)) {
-                    driverFallback.current.set(dr.driver_number, dr);
+                const meetingDrivers = await getDrivers(undefined, sess.meeting_key);
+                meetingCache = new Map();
+                for (const dr of meetingDrivers) {
+                  if (!meetingCache.has(dr.driver_number)) {
+                    meetingCache.set(dr.driver_number, dr);
                   }
                 }
+                driverFallbackCache.current.set(sess.meeting_key, meetingCache);
               } catch {
                 // fallback failed
               }
             }
-            if (driverFallback.current) {
+            if (meetingCache) {
               d = d.map((dr) => {
-                const fb = driverFallback.current!.get(dr.driver_number);
+                const fb = meetingCache!.get(dr.driver_number);
                 if (fb) {
                   dr.broadcast_name = dr.broadcast_name || fb.broadcast_name;
                   dr.full_name = dr.full_name || fb.full_name;

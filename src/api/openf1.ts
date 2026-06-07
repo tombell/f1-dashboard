@@ -58,8 +58,8 @@ export async function getStartingGrid(meetingKey: number, sessionKey?: number) {
 }
 
 // Drivers
-export async function getDrivers(sessionKey?: number) {
-  const q = buildQuery({ session_key: sessionKey });
+export async function getDrivers(sessionKey?: number, meetingKey?: number) {
+  const q = buildQuery({ session_key: sessionKey, meeting_key: meetingKey });
   return fetchJson<import("../types/api").Driver[]>(`/drivers${q}`);
 }
 

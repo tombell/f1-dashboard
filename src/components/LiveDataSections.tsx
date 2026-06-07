@@ -70,7 +70,6 @@ export default function LiveDataSections({
   meetingKey,
   sessionName,
 }: LiveDataSectionsProps) {
-  void meetingKey; // reserved for future use
   const [laps, setLaps] = useState<Lap[]>([]);
   const [pits, setPits] = useState<PitStop[]>([]);
   const [stints, setStints] = useState<Stint[]>([]);
@@ -81,10 +80,9 @@ export default function LiveDataSections({
   const [driverMap, setDriverMap] = useState<
     Map<number, { name_acronym: string; team_name: string; team_colour: string }>
   >(new Map());
-  const driverFallback = useRef<Map<
-    number,
-    { name_acronym: string; team_name: string; team_colour: string }
-  > | null>(null);
+  const driverFallbackCache = useRef<
+    Map<number, Map<number, { name_acronym: string; team_name: string; team_colour: string }>>
+  >(new Map());
 
   const handleToggle = useCallback((k: string) => {
     setCollapsed((c) => ({ ...c, [k]: !(c[k] ?? true) }));
@@ -128,27 +126,29 @@ export default function LiveDataSections({
           }
         }
 
-        // Fallback if per-session drivers are sparse
-        if (nameMap.size < 10) {
-          if (!driverFallback.current) {
+        // Fallback if per-session drivers are sparse — scope to the meeting
+        if (nameMap.size < 10 && meetingKey) {
+          let meetingCache = driverFallbackCache.current.get(meetingKey);
+          if (!meetingCache) {
             try {
-              const allDrivers = await getDrivers();
-              driverFallback.current = new Map();
-              for (const d of allDrivers) {
-                if (!driverFallback.current.has(d.driver_number)) {
-                  driverFallback.current.set(d.driver_number, {
+              const meetingDrivers = await getDrivers(undefined, meetingKey);
+              meetingCache = new Map();
+              for (const d of meetingDrivers) {
+                if (!meetingCache.has(d.driver_number)) {
+                  meetingCache.set(d.driver_number, {
                     name_acronym: d.name_acronym,
                     team_name: d.team_name,
                     team_colour: d.team_colour,
                   });
                 }
               }
+              driverFallbackCache.current.set(meetingKey, meetingCache);
             } catch {
               // fallback failed
             }
           }
-          if (driverFallback.current) {
-            for (const [dn, info] of driverFallback.current) {
+          if (meetingCache) {
+            for (const [dn, info] of meetingCache) {
               if (!nameMap.has(dn)) nameMap.set(dn, info);
             }
           }
@@ -164,7 +164,7 @@ export default function LiveDataSections({
     return () => {
       mounted = false;
     };
-  }, [sessionKey]);
+  }, [sessionKey, meetingKey]);
 
   // Process laps into per-driver summaries
   const lapSummaries = useMemo(() => {

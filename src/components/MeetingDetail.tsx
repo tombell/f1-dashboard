@@ -132,11 +132,11 @@ export default function MeetingDetail({
           });
         }
 
-        // If driver data is empty for this session, fall back to all-driver registry
-        if (nameMap.size < 10) {
+        // If driver data is empty for this session, fall back to meeting-scoped registry
+        if (nameMap.size < 10 && selectedSession.meeting_key) {
           try {
-            const allDrivers = await getDrivers();
-            for (const d of allDrivers) {
+            const meetingDrivers = await getDrivers(undefined, selectedSession.meeting_key);
+            for (const d of meetingDrivers) {
               if (!nameMap.has(d.driver_number)) {
                 nameMap.set(d.driver_number, {
                   broadcast_name: d.broadcast_name,
