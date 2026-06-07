@@ -17,10 +17,12 @@ export default function LiveDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [positionChanges, setPositionChanges] = useState<Map<number, "up" | "down">>(new Map());
   const [recentPits, setRecentPits] = useState<Set<number>>(new Set());
+  const [fastestLapDriver, setFastestLapDriver] = useState<number | null>(null);
   const [searchParams] = useSearchParams();
   const driverFallback = useRef<Map<number, Driver> | null>(null);
   const prevPositions = useRef<Map<number, number> | null>(null);
   const prevPitCounts = useRef<Map<number, number>>(new Map());
+  const fastestLapRef = useRef<{ time: number; driver: number; maxLap: number } | null>(null);
 
   const sessionKey = searchParams.get("session") ? Number(searchParams.get("session")) : undefined;
 
@@ -78,6 +80,40 @@ export default function LiveDashboard() {
 
           if (!mounted) return;
           setDrivers(d);
+
+          // Track fastest lap
+          const maxLap = fastestLapRef.current?.maxLap ?? 0;
+          try {
+            const lapData = await (await fetch(`/v1/laps?session_key=${sk}&lap_number>=${maxLap}`)).json();
+            if (Array.isArray(lapData) && lapData.length > 0) {
+              for (const lap of lapData) {
+                if (lap.lap_duration == null) continue;
+                if (
+                  !fastestLapRef.current ||
+                  lap.lap_duration < fastestLapRef.current.time
+                ) {
+                  fastestLapRef.current = {
+                    time: lap.lap_duration,
+                    driver: lap.driver_number,
+                    maxLap: Math.max(fastestLapRef.current?.maxLap ?? 0, lap.lap_number),
+                  };
+                }
+              }
+              if (!fastestLapRef.current) {
+                // No valid laps yet
+              } else {
+                // Update maxLap to avoid re-fetching old data
+                const newMax = Math.max(...lapData.map((l: any) => l.lap_number ?? 0));
+                if (newMax > (fastestLapRef.current.maxLap ?? 0)) {
+                  fastestLapRef.current = { ...fastestLapRef.current, maxLap: newMax };
+                }
+              }
+            }
+          } catch {
+            // silent — lap fetch is non-critical
+          }
+          const flDriver = fastestLapRef.current?.driver ?? null;
+          if (flDriver !== fastestLapDriver) setFastestLapDriver(flDriver);
 
           // Detect position changes
           const newPosMap = new Map<number, number>();
@@ -156,7 +192,7 @@ export default function LiveDashboard() {
         </div>
       )}
       <div className="flex-1 grid grid-cols-[1fr_2fr] gap-3 min-h-0 max-lg:grid-cols-1">
-        <TimingTower drivers={drivers} positions={latestPositions} intervals={intervals} positionChanges={positionChanges} recentPits={recentPits} />
+        <TimingTower drivers={drivers} positions={latestPositions} intervals={intervals} positionChanges={positionChanges} recentPits={recentPits} fastestLapDriver={fastestLapDriver} />
         <RaceControl sessionKey={session?.session_key} />
       </div>
     </div>

@@ -7,6 +7,7 @@ interface TimingTowerProps {
   intervals: Interval[];
   positionChanges: Map<number, "up" | "down">;
   recentPits: Set<number>;
+  fastestLapDriver: number | null;
 }
 
 const TEAM_COLORS: Record<string, string> = {
@@ -27,7 +28,7 @@ function teamColor(teamName: string): string {
   return TEAM_COLORS[teamName] || "#666688";
 }
 
-export default function TimingTower({ drivers, positions, intervals, positionChanges, recentPits }: TimingTowerProps) {
+export default function TimingTower({ drivers, positions, intervals, positionChanges, recentPits, fastestLapDriver }: TimingTowerProps) {
   // Build a map of driver_number -> last interval
   const intervalMap = useMemo(() => {
     const map = new Map<number, Interval>();
@@ -87,6 +88,9 @@ export default function TimingTower({ drivers, positions, intervals, positionCha
               <span className="w-[30px] font-bold text-f1-bright">{pos?.position ?? "—"}</span>
               <span className="flex-1 flex items-center gap-2">
                 <span className="font-semibold text-f1-bright">{driver.name_acronym}</span>
+                {fastestLapDriver === driver.driver_number && (
+                  <span className="text-[11px]" title="Fastest lap">⚡</span>
+                )}
                 {recentPits.has(driver.driver_number) && (
                   <span className="text-[10px] bg-f1-blue/20 text-f1-blue font-bold px-1 rounded leading-none">PIT</span>
                 )}
