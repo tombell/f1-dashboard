@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   getLaps,
   getPitStops,
@@ -6,6 +6,7 @@ import {
   getWeather,
   getRaceControl,
   getPositions,
+  getDrivers,
 } from "@/api/openf1";
 import type {
   Lap,
@@ -14,6 +15,7 @@ import type {
   WeatherReading,
   RaceControlMessage,
   Position,
+  Driver,
 } from "@/types/api";
 import RaceControl from "./RaceControl";
 
@@ -46,6 +48,12 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
   const [raceControl, setRaceControl] = useState<RaceControlMessage[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [driverMap, setDriverMap] = useState<Map<number, string>>(new Map());
+  const driverFallback = useRef<Map<number, string> | null>(null);
+
+  function driverLabel(dn: number): string {
+    return driverMap.get(dn) ?? `#${dn}`;
+  }
 
   useEffect(() => {
     if (!sessionKey) return;
@@ -53,13 +61,14 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
 
     const fetchLiveData = async () => {
       try {
-        const [l, p, s, w, rc, pos] = await Promise.all([
+        const [l, p, s, w, rc, pos, drs] = await Promise.all([
           getLaps(sessionKey).catch(() => []),
           getPitStops(sessionKey).catch(() => []),
           getStints(sessionKey).catch(() => []),
           getWeather(sessionKey).catch(() => []),
           getRaceControl(sessionKey).catch(() => []),
           getPositions(sessionKey).catch(() => []),
+          getDrivers(sessionKey).catch(() => [] as Driver[]),
         ]);
         if (!mounted) return;
         setLaps(l);
@@ -68,6 +77,38 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
         setWeather(w);
         setRaceControl(rc);
         setPositions(pos);
+
+        // Build driver name map
+        const nameMap = new Map<number, string>();
+        for (const d of drs) {
+          if (!nameMap.has(d.driver_number)) {
+            nameMap.set(d.driver_number, `${d.name_acronym} · ${d.team_name}`);
+          }
+        }
+
+        // Fallback if per-session drivers are sparse
+        if (nameMap.size < 10) {
+          if (!driverFallback.current) {
+            try {
+              const allDrivers = await getDrivers();
+              driverFallback.current = new Map();
+              for (const d of allDrivers) {
+                if (!driverFallback.current.has(d.driver_number)) {
+                  driverFallback.current.set(d.driver_number, `${d.name_acronym} · ${d.team_name}`);
+                }
+              }
+            } catch {
+              // fallback failed
+            }
+          }
+          if (driverFallback.current) {
+            for (const [dn, label] of driverFallback.current) {
+              if (!nameMap.has(dn)) nameMap.set(dn, label);
+            }
+          }
+        }
+
+        setDriverMap(nameMap);
       } catch {
         // silent
       }
@@ -177,7 +218,7 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
                   className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3"
                 >
                   <td className="px-3 py-2 text-xs font-semibold text-f1-bright">
-                    #{ls.driver_number}
+                    {driverLabel(ls.driver_number)}
                   </td>
                   <td className="px-3 py-2 text-xs text-f1-green tabular-nums">
                     {ls.fastest ? `${ls.fastest.toFixed(3)}s` : "-"}
@@ -224,7 +265,7 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
                 .map((p, i) => (
                   <tr key={i} className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3">
                     <td className="px-3 py-2 text-xs font-semibold text-f1-bright">
-                      #{p.driver_number}
+                      {driverLabel(p.driver_number)}
                     </td>
                     <td className="px-3 py-2 text-xs">L{p.lap_number}</td>
                     <td className="px-3 py-2 text-xs text-f1-dim">
@@ -276,7 +317,7 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
                     key={`${dn}-${s.stint_number}`}
                     className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3"
                   >
-                    <td className="px-3 py-2 text-xs font-semibold text-f1-bright">#{dn}</td>
+                    <td className="px-3 py-2 text-xs font-semibold text-f1-bright">{driverLabel(dn)}</td>
                     <td className="px-3 py-2 text-xs text-f1-dim">{s.stint_number}</td>
                     <td className="px-3 py-2 text-xs">
                       L{s.lap_start}–{s.lap_end}
@@ -367,7 +408,7 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
                       key={dn}
                       className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3"
                     >
-                      <td className="px-3 py-2 text-xs font-semibold text-f1-bright">#{dn}</td>
+                      <td className="px-3 py-2 text-xs font-semibold text-f1-bright">{driverLabel(dn)}</td>
                       <td className="px-3 py-2 text-xs text-f1-dim">
                         {ch.start != null ? `P${ch.start}` : "-"}
                       </td>
