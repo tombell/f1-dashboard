@@ -280,12 +280,22 @@ export default function LiveDashboard() {
               const match = (entry.message || "").match(/CAR\s+(\d+)/);
               return match ? parseInt(match[1]) : null;
             };
-            // Process newest first to get latest status per driver
+            // For each driver the NEWEST message decides their status.
+            // If the latest says NFA/served → no badge; only INV/PEN if latest says so.
+            // Iterate newest-first, then skip any driver we've already recorded.
             const sorted = [...rc].toReversed();
             for (const entry of sorted) {
               const dn = extractDriver(entry);
               if (!dn || penalties.has(dn)) continue;
               const msg = entry.message || "";
+              // Resolution messages — don't set any status (driver is clear)
+              if (
+                msg.includes("NO FURTHER ACTION") ||
+                msg.includes("NO FURTHER INVESTIGATION") ||
+                msg.includes("PENALTY SERVED")
+              ) {
+                continue;
+              }
               if (msg.includes("UNDER INVESTIGATION")) {
                 penalties.set(dn, "INVESTIGATION");
               } else if (
@@ -293,24 +303,7 @@ export default function LiveDashboard() {
                 msg.includes("DRIVE THROUGH PENALTY") ||
                 msg.includes("STOP-GO PENALTY")
               ) {
-                if (!msg.includes("SERVED") && !msg.includes("PENALTY SERVED")) {
-                  penalties.set(dn, "PENALTY");
-                }
-              }
-            }
-            // Check for served penalties or cleared investigations
-            for (const entry of sorted) {
-              const dn = extractDriver(entry);
-              if (!dn) continue;
-              const msg = entry.message || "";
-              if (msg.includes("PENALTY SERVED") && penalties.get(dn) === "PENALTY") {
-                penalties.delete(dn);
-              }
-              if (
-                msg.includes("NO FURTHER INVESTIGATION") &&
-                penalties.get(dn) === "INVESTIGATION"
-              ) {
-                penalties.delete(dn);
+                penalties.set(dn, "PENALTY");
               }
             }
           }
