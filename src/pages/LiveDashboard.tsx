@@ -15,8 +15,10 @@ export default function LiveDashboard() {
   const [intervals, setIntervals] = useState<Interval[]>([]);
   const [weather, setWeather] = useState<WeatherReading[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [positionChanges, setPositionChanges] = useState<Map<number, "up" | "down">>(new Map());
   const [searchParams] = useSearchParams();
   const driverFallback = useRef<Map<number, Driver> | null>(null);
+  const prevPositions = useRef<Map<number, number> | null>(null);
 
   const sessionKey = searchParams.get("session") ? Number(searchParams.get("session")) : undefined;
 
@@ -73,6 +75,29 @@ export default function LiveDashboard() {
 
           if (!mounted) return;
           setDrivers(d);
+
+          // Detect position changes
+          const newPosMap = new Map<number, number>();
+          for (const pos of p) {
+            newPosMap.set(pos.driver_number, pos.position);
+          }
+          if (prevPositions.current && prevPositions.current.size > 0) {
+            const changes = new Map<number, "up" | "down">();
+            for (const [dn, newPos] of newPosMap) {
+              const oldPos = prevPositions.current.get(dn);
+              if (oldPos !== undefined && oldPos !== newPos) {
+                changes.set(dn, newPos < oldPos ? "up" : "down");
+              }
+            }
+            if (changes.size > 0) {
+              setPositionChanges(changes);
+              setTimeout(() => {
+                setPositionChanges(new Map());
+              }, 4000);
+            }
+          }
+          prevPositions.current = newPosMap;
+
           setPositions(p);
           setIntervals(i);
           setWeather(w);
@@ -110,7 +135,7 @@ export default function LiveDashboard() {
         </div>
       )}
       <div className="flex-1 grid grid-cols-[1fr_2fr] gap-3 min-h-0 max-lg:grid-cols-1">
-        <TimingTower drivers={drivers} positions={latestPositions} intervals={intervals} />
+        <TimingTower drivers={drivers} positions={latestPositions} intervals={intervals} positionChanges={positionChanges} />
         <RaceControl sessionKey={session?.session_key} />
       </div>
     </div>

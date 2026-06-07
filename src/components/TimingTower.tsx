@@ -5,6 +5,7 @@ interface TimingTowerProps {
   drivers: Driver[];
   positions: Map<number, Position>;
   intervals: Interval[];
+  positionChanges: Map<number, "up" | "down">;
 }
 
 const TEAM_COLORS: Record<string, string> = {
@@ -25,7 +26,7 @@ function teamColor(teamName: string): string {
   return TEAM_COLORS[teamName] || "#666688";
 }
 
-export default function TimingTower({ drivers, positions, intervals }: TimingTowerProps) {
+export default function TimingTower({ drivers, positions, intervals, positionChanges }: TimingTowerProps) {
   // Build a map of driver_number -> last interval
   const intervalMap = useMemo(() => {
     const map = new Map<number, Interval>();
@@ -69,11 +70,17 @@ export default function TimingTower({ drivers, positions, intervals }: TimingTow
           const pos = positions.get(driver.driver_number);
           const iv = intervalMap.get(driver.driver_number);
           const color = teamColor(driver.team_name);
+          const change = positionChanges.get(driver.driver_number);
+          const changeClass = change === "up"
+            ? "animate-pos-up"
+            : change === "down"
+              ? "animate-pos-down"
+              : "";
 
           return (
             <div
               key={driver.driver_number}
-              className="flex px-3 py-2 text-xs border-b border-f1-border last:border-b-0 hover:bg-f1-bg3/50 transition-colors"
+              className={`flex px-3 py-2 text-xs border-b border-f1-border last:border-b-0 hover:bg-f1-bg3/50 transition-colors ${changeClass}`}
               style={{ borderLeft: `3px solid ${color}` }}
             >
               <span className="w-[30px] font-bold text-f1-bright">{pos?.position ?? "—"}</span>
