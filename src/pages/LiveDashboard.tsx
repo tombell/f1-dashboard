@@ -5,8 +5,8 @@ import WeatherBar from "@/components/WeatherBar";
 import TimingTower from "@/components/TimingTower";
 import RaceControl from "@/components/RaceControl";
 import TrackClock from "@/components/TrackClock";
-import { getLatestSession, getDrivers, getPositions, getIntervals, getWeather, getPitStops } from "@/api/openf1";
-import type { Session, Driver, Position, Interval, WeatherReading, PitStop } from "@/types/api";
+import { getLatestSession, getDrivers, getPositions, getIntervals, getWeather, getPitStops, getStints } from "@/api/openf1";
+import type { Session, Driver, Position, Interval, WeatherReading, PitStop, Stint } from "@/types/api";
 
 export default function LiveDashboard() {
   const [session, setSession] = useState<Session | null>(null);
@@ -19,6 +19,7 @@ export default function LiveDashboard() {
   const [recentPits, setRecentPits] = useState<Set<number>>(new Set());
   const [fastestLapDriver, setFastestLapDriver] = useState<number | null>(null);
   const [currentLap, setCurrentLap] = useState<number>(0);
+  const [currentTyres, setCurrentTyres] = useState<Map<number, string>>(new Map());
   const [searchParams] = useSearchParams();
   const driverFallback = useRef<Map<number, Driver> | null>(null);
   const prevPositions = useRef<Map<number, number> | null>(null);
@@ -41,12 +42,13 @@ export default function LiveDashboard() {
           setSession(sess);
 
           const sk = sess.session_key;
-          let [d, p, i, w, pits] = await Promise.all([
+          let [d, p, i, w, pits, stints] = await Promise.all([
             getDrivers(sk),
             getPositions(sk),
             getIntervals(sk),
             getWeather(sk),
             getPitStops(sk),
+            getStints(sk),
           ]);
 
           // Enrich sparse driver data with fallback driver registry
@@ -158,6 +160,29 @@ export default function LiveDashboard() {
           }
           prevPitCounts.current = pitCounts;
 
+          // Derive current tyre compound for each driver
+          const tyreMap = new Map<number, string>();
+          const lapForTyres = currentLap || 9999;
+          for (const stint of stints) {
+            if (stint.lap_start <= lapForTyres && stint.lap_end >= lapForTyres) {
+              tyreMap.set(stint.driver_number, stint.compound);
+            }
+          }
+          // For drivers not on track, use their latest stint
+          const stintByDriver = new Map<number, Stint>();
+          for (const stint of stints) {
+            const existing = stintByDriver.get(stint.driver_number);
+            if (!existing || stint.stint_number > existing.stint_number) {
+              stintByDriver.set(stint.driver_number, stint);
+            }
+          }
+          for (const [dn, stint] of stintByDriver) {
+            if (!tyreMap.has(dn)) {
+              tyreMap.set(dn, stint.compound);
+            }
+          }
+          setCurrentTyres(tyreMap);
+
           setPositions(p);
           setIntervals(i);
           setWeather(w);
@@ -195,7 +220,7 @@ export default function LiveDashboard() {
         </div>
       )}
       <div className="flex-1 grid grid-cols-[1fr_2fr] gap-3 min-h-0 max-lg:grid-cols-1">
-        <TimingTower drivers={drivers} positions={latestPositions} intervals={intervals} positionChanges={positionChanges} recentPits={recentPits} fastestLapDriver={fastestLapDriver} />
+        <TimingTower drivers={drivers} positions={latestPositions} intervals={intervals} positionChanges={positionChanges} recentPits={recentPits} fastestLapDriver={fastestLapDriver} currentTyres={currentTyres} />
         <RaceControl sessionKey={session?.session_key} />
       </div>
     </div>

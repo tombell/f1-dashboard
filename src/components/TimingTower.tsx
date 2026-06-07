@@ -8,7 +8,23 @@ interface TimingTowerProps {
   positionChanges: Map<number, "up" | "down">;
   recentPits: Set<number>;
   fastestLapDriver: number | null;
+  currentTyres: Map<number, string>;
 }
+
+const TYRE_COLORS: Record<string, string> = {
+  SOFT: "bg-red-500",
+  MEDIUM: "bg-yellow-500",
+  HARD: "bg-white text-black",
+  INTERMEDIATE: "bg-green-600",
+  WET: "bg-blue-600",
+};
+const TYRE_LABELS: Record<string, string> = {
+  SOFT: "S",
+  MEDIUM: "M",
+  HARD: "H",
+  INTERMEDIATE: "I",
+  WET: "W",
+};
 
 const TEAM_COLORS: Record<string, string> = {
   McLaren: "#ff8700",
@@ -28,7 +44,7 @@ function teamColor(teamName: string): string {
   return TEAM_COLORS[teamName] || "#666688";
 }
 
-export default function TimingTower({ drivers, positions, intervals, positionChanges, recentPits, fastestLapDriver }: TimingTowerProps) {
+export default function TimingTower({ drivers, positions, intervals, positionChanges, recentPits, fastestLapDriver, currentTyres }: TimingTowerProps) {
   // Build a map of driver_number -> last interval
   const intervalMap = useMemo(() => {
     const map = new Map<number, Interval>();
@@ -94,6 +110,13 @@ export default function TimingTower({ drivers, positions, intervals, positionCha
                 {recentPits.has(driver.driver_number) && (
                   <span className="text-[10px] bg-f1-blue/20 text-f1-blue font-bold px-1 rounded leading-none">PIT</span>
                 )}
+                {(() => {
+                  const compound = currentTyres.get(driver.driver_number);
+                  if (!compound) return null;
+                  const color = TYRE_COLORS[compound.toUpperCase()] || "bg-gray-500";
+                  const label = TYRE_LABELS[compound.toUpperCase()] || compound[0];
+                  return <span className={`text-[10px] font-bold px-1 rounded leading-none ${color}`}>{label}</span>;
+                })()}
                 <span className="text-f1-dim text-[11px]">{driver.team_name}</span>
               </span>
               <span className="w-[50px] text-right text-f1-orange">
