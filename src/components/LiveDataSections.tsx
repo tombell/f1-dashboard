@@ -18,10 +18,12 @@ import type {
   Driver,
 } from "@/types/api";
 import RaceControl from "./RaceControl";
+import WeatherChart from "./WeatherChart";
 
 interface LiveDataSectionsProps {
   sessionKey: number;
   meetingKey: number;
+  sessionName?: string;
 }
 
 const COMPOUND_COLORS: Record<string, string> = {
@@ -40,7 +42,7 @@ function compoundColor(compound: string): string {
   return COMPOUND_COLORS[norm] || "#888";
 }
 
-export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSectionsProps) {
+export default function LiveDataSections({ sessionKey, meetingKey, sessionName }: LiveDataSectionsProps) {
   const [laps, setLaps] = useState<Lap[]>([]);
   const [pits, setPits] = useState<PitStop[]>([]);
   const [stints, setStints] = useState<Stint[]>([]);
@@ -201,6 +203,7 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
   const hasStints = stints.length > 0;
   const hasWeather = weather.length > 0;
   const hasPositionChanges = positions.length > 0;
+  const isRace = sessionName === "Race";
 
   return (
     <div className="flex flex-col gap-3 mt-3">
@@ -212,8 +215,7 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
           title="🏁 Lap Times"
           sectionKey="laps"
           collapsed={collapsed}
-          onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !c[k] }))}
-          count={lapSummaries.length}
+          onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !(c[k] ?? true) }))}
         >
           <table className="w-full border-collapse">
             <thead>
@@ -259,8 +261,7 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
           title="🛑 Pit Stops"
           sectionKey="pits"
           collapsed={collapsed}
-          onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !c[k] }))}
-          count={pits.length}
+          onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !(c[k] ?? true) }))}
         >
           <table className="w-full border-collapse">
             <thead>
@@ -312,8 +313,7 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
           title="🏎️ Tyre Stints"
           sectionKey="stints"
           collapsed={collapsed}
-          onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !c[k] }))}
-          count={stintsByDriver.size}
+          onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !(c[k] ?? true) }))}
         >
           <div className="divide-y divide-f1-border">
             {(() => {
@@ -389,8 +389,8 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
                       ))}
                     </div>
 
-                    {/* Lap time mini chart */}
-                    {driverLaps.length > 1 && fastestLap < Infinity && (
+                    {/* Lap time mini chart — only for Race sessions */}
+                    {isRace && driverLaps.length > 1 && fastestLap < Infinity && (
                       <div className="flex items-end gap-[1px] h-8">
                         {driverLaps.map((l) => {
                           const comp = lapCompound.get(l.lap_number) || "";
@@ -425,41 +425,9 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
           title="🌤️ Weather History"
           sectionKey="weather"
           collapsed={collapsed}
-          onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !c[k] }))}
-          count={weather.length}
+          onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !(c[k] ?? true) }))}
         >
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-f1-bg3 text-[11px] text-f1-dim font-semibold uppercase tracking-wider">
-                <th className="px-3 py-2 text-left">Time</th>
-                <th className="px-3 py-2 text-left">Air</th>
-                <th className="px-3 py-2 text-left">Track</th>
-                <th className="px-3 py-2 text-left">Humidity</th>
-                <th className="px-3 py-2 text-left">Wind</th>
-                <th className="px-3 py-2 text-left">Rain</th>
-              </tr>
-            </thead>
-            <tbody>
-              {weather.slice(-120).map((w, i) => (
-                <tr key={i} className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3">
-                  <td className="px-3 py-2 text-xs text-f1-dim">
-                    {new Date(w.date).toLocaleTimeString()}
-                  </td>
-                  <td className="px-3 py-2 text-xs">{w.air_temperature ?? "-"}°C</td>
-                  <td className="px-3 py-2 text-xs">{w.track_temperature ?? "-"}°C</td>
-                  <td className="px-3 py-2 text-xs">{w.humidity ?? "-"}%</td>
-                  <td className="px-3 py-2 text-xs">{w.wind_speed ?? "-"} m/s</td>
-                  <td className="px-3 py-2 text-xs">
-                    {w.rainfall ? (
-                      <span className="text-f1-blue">🌧️</span>
-                    ) : (
-                      <span className="text-f1-dim">☀️</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <WeatherChart data={weather} />
         </LiveSection>
       )}
 
@@ -469,8 +437,7 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
           title="📊 Position Changes"
           sectionKey="positions"
           collapsed={collapsed}
-          onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !c[k] }))}
-          count={posChanges.size}
+          onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !(c[k] ?? true) }))}
         >
           <table className="w-full border-collapse">
             <thead>
@@ -520,8 +487,7 @@ export default function LiveDataSections({ sessionKey, meetingKey }: LiveDataSec
         title="🚩 Race Control"
         sectionKey="rc"
         collapsed={collapsed}
-        onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !c[k] }))}
-        count={raceControl.length}
+        onToggle={(k) => setCollapsed((c) => ({ ...c, [k]: !(c[k] ?? true) }))}
       >
         <RaceControl sessionKey={sessionKey} />
       </LiveSection>
@@ -534,17 +500,15 @@ function LiveSection({
   sectionKey,
   collapsed,
   onToggle,
-  count,
   children,
 }: {
   title: string;
   sectionKey: string;
   collapsed: Record<string, boolean>;
   onToggle: (key: string) => void;
-  count: number;
   children: React.ReactNode;
 }) {
-  const isCollapsed = collapsed[sectionKey] ?? false;
+  const isCollapsed = collapsed[sectionKey] ?? true;
 
   return (
     <div className="bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden">
@@ -553,7 +517,7 @@ function LiveSection({
         className="text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center cursor-pointer select-none"
       >
         <span>
-          {title} <span className="text-[11px] text-f1-dim font-normal">({count})</span>
+          {title}
         </span>
         <span className="text-f1-dim text-[11px] hover:bg-f1-bg4 px-1.5 py-0.5 rounded transition-colors">
           {isCollapsed ? "▶" : "▼"}

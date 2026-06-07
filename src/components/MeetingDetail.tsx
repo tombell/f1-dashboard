@@ -264,6 +264,7 @@ export default function MeetingDetail({
           <LiveDataSections
             sessionKey={selectedSession.session_key}
             meetingKey={meeting.meeting_key}
+            sessionName={selectedSession.session_name}
           />
         </>
       )}

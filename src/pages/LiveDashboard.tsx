@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import WeatherBar from "@/components/WeatherBar";
 import TimingTower from "@/components/TimingTower";
 import RaceControl from "@/components/RaceControl";
+import TrackClock from "@/components/TrackClock";
 import { getLatestSession, getDrivers, getPositions, getIntervals, getWeather } from "@/api/openf1";
 import type { Session, Driver, Position, Interval, WeatherReading } from "@/types/api";
 
@@ -99,13 +100,16 @@ export default function LiveDashboard() {
   return (
     <div className="flex flex-col gap-3 p-4 h-full min-h-screen">
       <Header session={session} onRefresh={() => setError(null)} />
-      <WeatherBar weather={latestWeather} />
+      <div className="flex items-center gap-3 flex-wrap">
+        <WeatherBar weather={latestWeather} />
+        <TrackClock />
+      </div>
       {error && (
         <div className="bg-f1-bg3 border border-f1-red/30 rounded-lg px-4 py-2 text-f1-red text-xs">
           {error}
         </div>
       )}
-      <div className="flex-1 grid grid-cols-[1.8fr_1fr] gap-3 min-h-0 max-lg:grid-cols-1">
+      <div className="flex-1 grid grid-cols-[1fr_2fr] gap-3 min-h-0 max-lg:grid-cols-1">
         <TimingTower drivers={drivers} positions={latestPositions} intervals={intervals} />
         <RaceControl sessionKey={session?.session_key} />
       </div>
