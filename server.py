@@ -9,8 +9,6 @@ import urllib.request
 import urllib.error
 import os
 import sys
-import json
-from collections import OrderedDict
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
 API_TARGET = "http://localhost:8000"
@@ -18,66 +16,16 @@ STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist")
 
 
 class DashboardHandler(http.server.SimpleHTTPRequestHandler):
-    mongo_client = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=STATIC_DIR, **kwargs)
 
-    @classmethod
-    def _get_mongo(cls):
-        if cls.mongo_client is None:
-            from pymongo import MongoClient
-            cls.mongo_client = MongoClient("mongodb://localhost:27017")
-        return cls.mongo_client["openf1-livetiming"]
-
     def do_GET(self):
         if self.path.startswith("/v1/"):
             return self._proxy_api()
-        if self.path == "/api/location/current":
-            return self._get_latest_locations()
         if not self._is_static_path():
             self.path = "/"
         return super().do_GET()
-
-    def _get_latest_locations(self):
-        """Returns the latest X/Y/Z location for each driver in the current session."""
-        try:
-            import urllib.request
-            # First get the current session key
-            req = urllib.request.Request(f"{API_TARGET}/v1/sessions?session_key=latest")
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                sessions = json.loads(resp.read().decode())
-            if not sessions:
-                self._send_json([])
-                return
-            session_key = sessions[0]["session_key"]
-
-            # Query MongoDB directly (bypass slow OpenF1 aggregation pipeline)
-            db = self._get_mongo()
-            pipeline = [
-                {"$match": {"session_key": session_key, "x": {"$ne": 0}, "y": {"$ne": 0}}},
-                {"$sort": {"date": -1}},
-                {"$group": {"_id": "$driver_number", "doc": {"$first": "$$ROOT"}}},
-                {"$replaceRoot": {"newRoot": "$doc"}},
-                {"$project": {"_id": 0, "_key": 0, "meeting_key": 0, "session_key": 0}}
-            ]
-            results = list(db.location.aggregate(pipeline, maxTimeMS=10000))
-            # Convert dates to ISO strings
-            for r in results:
-                if "date" in r and hasattr(r["date"], "isoformat"):
-                    r["date"] = r["date"].isoformat()
-            self._send_json(results)
-        except Exception as e:
-            self._send_json({"error": str(e)}, status=500)
-
-    def _send_json(self, data, status=200):
-        body = json.dumps(data).encode()
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.end_headers()
-        self.wfile.write(body)
 
     def _is_static_path(self):
         if self.path in ("/", ""):

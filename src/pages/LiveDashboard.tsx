@@ -17,7 +17,6 @@ import TeamRadio from "@/components/TeamRadio";
 import TimingTower from "@/components/TimingTower";
 import TrackClock from "@/components/TrackClock";
 import WeatherBar from "@/components/WeatherBar";
-import TrackMap from "@/components/TrackMap";
 import type {
   Session,
   Driver,
@@ -42,7 +41,6 @@ export default function LiveDashboard() {
   const [currentLap, setCurrentLap] = useState<number>(0);
   const [currentTyres, setCurrentTyres] = useState<Map<number, string>>(new Map());
   const [driverPenalties, setDriverPenalties] = useState<Map<number, string>>(new Map());
-  const [driverLocations, setDriverLocations] = useState<Array<{driver_number: number; x: number; y: number; date: string}>>([]);
   const [searchParams] = useSearchParams();
   const driverFallback = useRef<Map<number, Driver> | null>(null);
   const prevPositions = useRef<Map<number, number> | null>(null);
@@ -328,28 +326,6 @@ export default function LiveDashboard() {
     };
   }, [sessionKey]);
 
-  // Fetch driver locations for the track map (slower cadence)
-  useEffect(() => {
-    let mounted = true;
-    const fetchLocations = async () => {
-      try {
-        const resp = await fetch("/api/location/current");
-        const data = await resp.json();
-        if (mounted && Array.isArray(data)) {
-          setDriverLocations(data);
-        }
-      } catch {
-        // silent — track map is non-critical
-      }
-    };
-    fetchLocations();
-    const interval = setInterval(fetchLocations, 10_000);
-    return () => {
-      mounted = false;
-      clearInterval(interval);
-    };
-  }, [sessionKey]);
-
   const latestWeather = weather.length > 0 ? weather[weather.length - 1] : null;
   const latestPositions = positions.reduce((map, p) => {
     map.set(p.driver_number, p);
@@ -389,7 +365,6 @@ export default function LiveDashboard() {
         />
         <RaceControl sessionKey={session?.session_key} />
       </div>
-      <TrackMap locations={driverLocations} nameMap={driverNameMap} />
       <TeamRadio sessionKey={session?.session_key} drivers={driverNameMap} />
     </div>
   );
