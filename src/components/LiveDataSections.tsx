@@ -55,7 +55,10 @@ function DriverCell({
   if (!info) return <span className="text-xs font-semibold text-f1-bright">#{driverNumber}</span>;
   return (
     // eslint-disable-next-line react-perf/jsx-no-new-object-as-prop
-    <span className="text-xs font-semibold" style={{ color: info.team_colour ? `#${info.team_colour}` : undefined }}>
+    <span
+      className="text-xs font-semibold"
+      style={{ color: info.team_colour ? `#${info.team_colour}` : undefined }}
+    >
       {info.name_acronym}
       <span className="ml-1.5 text-[11px] text-f1-dim font-normal">· {info.team_name}</span>
     </span>
@@ -305,7 +308,9 @@ export default function LiveDataSections({
                 .toReversed()
                 .map((p) => (
                   <tr
-                    key={`${p.driver_number}_${p.lap_number}_${p.pit_duration}`} className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3">
+                    key={`${p.driver_number}_${p.lap_number}_${p.pit_duration}`}
+                    className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3"
+                  >
                     <td className="px-3 py-2 text-xs font-semibold text-f1-bright">
                       <DriverCell driverNumber={p.driver_number} driverMap={driverMap} />
                     </td>
@@ -415,7 +420,13 @@ export default function LiveDataSections({
                           return (
                             <span key={st.stint_number}>
                               {/* eslint-disable-next-line react-perf/jsx-no-new-object-as-prop */}
-                              <span className="inline-block w-2 h-2 rounded-sm mr-1 align-middle" style={{ backgroundColor: compoundColor(st.compound), opacity: 0.6 }} />
+                              <span
+                                className="inline-block w-2 h-2 rounded-sm mr-1 align-middle"
+                                style={{
+                                  backgroundColor: compoundColor(st.compound),
+                                  opacity: 0.6,
+                                }}
+                              />
                               {st.compound} L{st.lap_start}–{st.lap_end}
                             </span>
                           );
@@ -546,9 +557,12 @@ function LiveSection({
 }) {
   const isCollapsed = collapsed[sectionKey] ?? true;
   const handleClick = useCallback(() => onToggle(sectionKey), [onToggle, sectionKey]);
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') onToggle(sectionKey);
-  }, [onToggle, sectionKey]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") onToggle(sectionKey);
+    },
+    [onToggle, sectionKey],
+  );
 
   return (
     <div className="bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden">

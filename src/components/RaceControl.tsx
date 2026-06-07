@@ -70,7 +70,7 @@ export default function RaceControl({ sessionKey }: RaceControlProps) {
         )}
         {messages.map((msg, i) => (
           <div
-            key={`${msg.date}_${msg.driver_number || i}_${msg.flag || ''}`}
+            key={`${msg.date}_${msg.driver_number || i}_${msg.flag || ""}`}
             className="flex gap-2 text-xs border-b border-f1-border/50 pb-1.5 last:border-b-0"
           >
             <span className="text-f1-dim shrink-0 text-[11px]">

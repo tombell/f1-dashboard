@@ -117,7 +117,9 @@ export default function TimingTower({
             <div
               key={driver.driver_number}
               className={`flex px-3 py-2 text-xs border-b border-f1-border last:border-b-0 hover:bg-f1-bg3/50 transition-colors ${changeClass} ${retiredDrivers.has(driver.driver_number) ? "opacity-40" : ""}`}
-              style={{ borderLeft: `3px solid ${color}` /* eslint-disable-line react-perf/jsx-no-new-object-as-prop */ }}
+              style={{
+                borderLeft: `3px solid ${color}` /* eslint-disable-line react-perf/jsx-no-new-object-as-prop */,
+              }}
             >
               <span className="w-[30px] font-bold text-f1-bright">{pos?.position ?? "—"}</span>
               <span className="flex-1 flex items-center gap-2">
@@ -133,7 +135,9 @@ export default function TimingTower({
                   const tyreColor = TYRE_COLORS[compound.toUpperCase()] || "bg-gray-500";
                   const label = TYRE_LABELS[compound.toUpperCase()] || compound[0];
                   return (
-                    <span className={`text-[10px] font-bold px-1 rounded leading-none ${tyreColor}`}>
+                    <span
+                      className={`text-[10px] font-bold px-1 rounded leading-none ${tyreColor}`}
+                    >
                       {label}
                     </span>
                   );

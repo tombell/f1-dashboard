@@ -140,7 +140,7 @@ export default function StandingsView({ meetings, year: _year }: StandingsViewPr
       for (let i = 0; i < raceMeetings.length; i += BATCH_SIZE) {
         const batch = raceMeetings.slice(i, i + BATCH_SIZE);
         // eslint-disable-next-line no-await-in-loop
-const entries = await Promise.all(batch.map((m) => loadMeeting(m.meeting_key)));
+        const entries = await Promise.all(batch.map((m) => loadMeeting(m.meeting_key)));
 
         for (let j = 0; j < batch.length; j++) {
           const entry = entries[j];

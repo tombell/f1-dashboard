@@ -50,7 +50,10 @@ export default function SessionResults({
 }: SessionResultsProps) {
   const tableType = useMemo(() => detectTableType(results, sessionType), [results, sessionType]);
   const isSprint = sessionName.toLowerCase().includes("sprint");
-  const segLabels = useMemo(() => (isSprint ? ["SQ1", "SQ2", "SQ3"] : ["Q1", "Q2", "Q3"]), [isSprint]);
+  const segLabels = useMemo(
+    () => (isSprint ? ["SQ1", "SQ2", "SQ3"] : ["Q1", "Q2", "Q3"]),
+    [isSprint],
+  );
   const [resultsOpen, setResultsOpen] = useState(true);
   const [gridOpen, setGridOpen] = useState(true);
 
@@ -150,10 +153,7 @@ export default function SessionResults({
                         P{g.position}
                       </td>
                       <td className="px-3 py-2 text-xs">
-                        <span
-                          style={driverColorStyle(g.team_colour)}
-                          className="font-semibold"
-                        >
+                        <span style={driverColorStyle(g.team_colour)} className="font-semibold">
                           {driverName(g)}
                         </span>
                         <span className="ml-1.5 text-[11px] text-f1-dim">· {g.team_name}</span>
@@ -212,10 +212,7 @@ function PracticeTable({ results }: { results: SessionResult[] }) {
           >
             <td className={`px-3 py-2 text-xs font-bold ${posColor(r.position)}`}>P{r.position}</td>
             <td className="px-3 py-2 text-xs">
-              <span
-                style={driverColorStyle(r.team_colour)}
-                className="font-semibold"
-              >
+              <span style={driverColorStyle(r.team_colour)} className="font-semibold">
                 {driverName(r)}
               </span>
               <span className="ml-1.5 text-[11px] text-f1-dim">· {r.team_name}</span>
@@ -305,10 +302,7 @@ function QualifyingTable({
                 P{r.position}
               </td>
               <td className="px-3 py-2 text-xs">
-                <span
-                  style={driverColorStyle(r.team_colour)}
-                  className="font-semibold"
-                >
+                <span style={driverColorStyle(r.team_colour)} className="font-semibold">
                   {driverName(r)}
                 </span>
                 <span className="ml-1.5 text-[11px] text-f1-dim">· {r.team_name}</span>
@@ -386,10 +380,7 @@ function RaceTable({ results }: { results: SessionResult[] }) {
                 )}
               </td>
               <td className="px-3 py-2 text-xs">
-                <span
-                  style={driverColorStyle(r.team_colour)}
-                  className="font-semibold"
-                >
+                <span style={driverColorStyle(r.team_colour)} className="font-semibold">
                   {driverName(r)}
                 </span>
                 <span className="ml-1.5 text-[11px] text-f1-dim">· {r.team_name}</span>

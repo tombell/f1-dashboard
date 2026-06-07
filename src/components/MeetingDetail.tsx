@@ -181,10 +181,13 @@ export default function MeetingDetail({
 
   const sessionHasResults = results.length > 0;
 
-  const handleSessionClick = useCallback((s: Session) => {
-    setSelectedSession(s);
-    onSessionSelect?.(s);
-  }, [setSelectedSession, onSessionSelect]);
+  const handleSessionClick = useCallback(
+    (s: Session) => {
+      setSelectedSession(s);
+      onSessionSelect?.(s);
+    },
+    [setSelectedSession, onSessionSelect],
+  );
 
   const handleSessionClickEvent = useCallback(
     (e: React.MouseEvent | React.KeyboardEvent) => {

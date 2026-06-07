@@ -17,14 +17,7 @@ import TeamRadio from "@/components/TeamRadio";
 import TimingTower from "@/components/TimingTower";
 import TrackClock from "@/components/TrackClock";
 import WeatherBar from "@/components/WeatherBar";
-import type {
-  Session,
-  Driver,
-  Position,
-  Interval,
-  WeatherReading,
-  Stint,
-} from "@/types/api";
+import type { Session, Driver, Position, Interval, WeatherReading, Stint } from "@/types/api";
 
 const extractDriver = (entry: any): number | null => {
   if (entry.driver_number) return entry.driver_number;
@@ -238,7 +231,10 @@ export default function LiveDashboard() {
                   (stint: Stint) => stint.driver_number === drv.driver_number,
                 );
                 if (driverStints.length === 0) continue;
-                const lastLap = Math.max(...driverStints.map((stint: Stint) => stint.lap_end ?? 0), 0);
+                const lastLap = Math.max(
+                  ...driverStints.map((stint: Stint) => stint.lap_end ?? 0),
+                  0,
+                );
                 // 3+ laps behind the leader = retired before the red flag
                 if (lastLap > 0 && maxLap - lastLap >= 3) {
                   redFlagStale.add(drv.driver_number);
@@ -286,7 +282,10 @@ export default function LiveDashboard() {
               const msg = entry.message || "";
               if (msg.includes("UNDER INVESTIGATION")) {
                 invCount.set(dn, (invCount.get(dn) || 0) + 1);
-              } else if (msg.includes("NO FURTHER ACTION") || msg.includes("NO FURTHER INVESTIGATION")) {
+              } else if (
+                msg.includes("NO FURTHER ACTION") ||
+                msg.includes("NO FURTHER INVESTIGATION")
+              ) {
                 invCount.set(dn, (invCount.get(dn) || 0) - 1);
               }
               // Penalty messages also close the investigation
