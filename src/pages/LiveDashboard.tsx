@@ -5,8 +5,8 @@ import WeatherBar from "@/components/WeatherBar";
 import TimingTower from "@/components/TimingTower";
 import RaceControl from "@/components/RaceControl";
 import TrackClock from "@/components/TrackClock";
-import { getLatestSession, getDrivers, getPositions, getIntervals, getWeather } from "@/api/openf1";
-import type { Session, Driver, Position, Interval, WeatherReading } from "@/types/api";
+import { getLatestSession, getDrivers, getPositions, getIntervals, getWeather, getPitStops } from "@/api/openf1";
+import type { Session, Driver, Position, Interval, WeatherReading, PitStop } from "@/types/api";
 
 export default function LiveDashboard() {
   const [session, setSession] = useState<Session | null>(null);
@@ -16,9 +16,11 @@ export default function LiveDashboard() {
   const [weather, setWeather] = useState<WeatherReading[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [positionChanges, setPositionChanges] = useState<Map<number, "up" | "down">>(new Map());
+  const [recentPits, setRecentPits] = useState<Set<number>>(new Set());
   const [searchParams] = useSearchParams();
   const driverFallback = useRef<Map<number, Driver> | null>(null);
   const prevPositions = useRef<Map<number, number> | null>(null);
+  const prevPitCounts = useRef<Map<number, number>>(new Map());
 
   const sessionKey = searchParams.get("session") ? Number(searchParams.get("session")) : undefined;
 
@@ -36,11 +38,12 @@ export default function LiveDashboard() {
           setSession(sess);
 
           const sk = sess.session_key;
-          let [d, p, i, w] = await Promise.all([
+          let [d, p, i, w, pits] = await Promise.all([
             getDrivers(sk),
             getPositions(sk),
             getIntervals(sk),
             getWeather(sk),
+            getPitStops(sk),
           ]);
 
           // Enrich sparse driver data with fallback driver registry
@@ -98,6 +101,24 @@ export default function LiveDashboard() {
           }
           prevPositions.current = newPosMap;
 
+          // Detect new pit stops
+          const pitCounts = new Map<number, number>();
+          for (const pit of pits) {
+            pitCounts.set(pit.driver_number, (pitCounts.get(pit.driver_number) ?? 0) + 1);
+          }
+          const newPits = new Set<number>();
+          for (const [dn, count] of pitCounts) {
+            const prev = prevPitCounts.current.get(dn) ?? 0;
+            if (count > prev) {
+              newPits.add(dn);
+            }
+          }
+          if (newPits.size > 0) {
+            setRecentPits(newPits);
+            setTimeout(() => setRecentPits(new Set()), 20000);
+          }
+          prevPitCounts.current = pitCounts;
+
           setPositions(p);
           setIntervals(i);
           setWeather(w);
@@ -135,7 +156,7 @@ export default function LiveDashboard() {
         </div>
       )}
       <div className="flex-1 grid grid-cols-[1fr_2fr] gap-3 min-h-0 max-lg:grid-cols-1">
-        <TimingTower drivers={drivers} positions={latestPositions} intervals={intervals} positionChanges={positionChanges} />
+        <TimingTower drivers={drivers} positions={latestPositions} intervals={intervals} positionChanges={positionChanges} recentPits={recentPits} />
         <RaceControl sessionKey={session?.session_key} />
       </div>
     </div>
