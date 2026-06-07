@@ -34,9 +34,9 @@ const TEAM_COLORS: Record<string, string> = {
   "Aston Martin": "#006f62",
   Alpine: "#ff87bc",
   Williams: "#005aff",
-  Haas: "#b6b6b6",
-  "RB F1 Team": "#6692ff",
-  "Kick Sauber": "#d2ff00",
+  "Haas F1 Team": "#b6b6b6",
+  "Racing Bulls": "#e02d6b",
+  Audi: "#222222",
   Cadillac: "#8b0000",
 };
 
