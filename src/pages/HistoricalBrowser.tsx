@@ -3,10 +3,10 @@ import type React from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { getMeetings } from "@/api/openf1";
-import Header from "@/components/Header";
-import MeetingCalendar from "@/components/MeetingCalendar";
-import MeetingDetail from "@/components/MeetingDetail";
-import StandingsView from "@/components/StandingsView";
+import Header from "@/components/shared/Header";
+import MeetingCalendar from "@/components/historical/MeetingCalendar";
+import MeetingDetail from "@/components/historical/MeetingDetail";
+import StandingsView from "@/components/historical/StandingsView";
 import type { Meeting, Session } from "@/types/api";
 
 type ViewTab = "races" | "standings";

@@ -2,7 +2,6 @@ import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import {
-  getLatestSession,
   getDrivers,
   getPositions,
   getIntervals,
@@ -11,350 +10,107 @@ import {
   getStints,
   getRaceControl,
 } from "@/api/openf1";
-import Header from "@/components/Header";
-import RaceControl from "@/components/RaceControl";
-import TeamRadio from "@/components/TeamRadio";
-import TimingTower from "@/components/TimingTower";
-import TrackClock from "@/components/TrackClock";
-import WeatherBar from "@/components/WeatherBar";
+import Header from "@/components/shared/Header";
+import RaceControl from "@/components/live/RaceControl";
+import TeamRadio from "@/components/live/TeamRadio";
+import TimingTower from "@/components/live/TimingTower";
+import TrackClock from "@/components/live/TrackClock";
+import WeatherBar from "@/components/live/WeatherBar";
 import type { Session, Driver, Position, Interval, WeatherReading, Stint } from "@/types/api";
 
-const extractDriver = (entry: any): number | null => {
-  if (entry.driver_number) return entry.driver_number;
-  const match = (entry.message || "").match(/CAR\s+(\d+)/);
-  return match ? parseInt(match[1]) : null;
-};
+import { useLiveSession } from "@/hooks/useLiveSession";
+import { useDriverFallback } from "@/hooks/useDriverFallback";
+import { useFastestLap } from "@/hooks/useFastestLap";
+import { usePositionChanges } from "@/hooks/usePositionChanges";
+import { usePitDetection } from "@/hooks/usePitDetection";
+import { useRetirements } from "@/hooks/useRetirements";
+import { useTyres } from "@/hooks/useTyres";
+import { usePenalties } from "@/hooks/usePenalties";
 
 export default function LiveDashboard() {
-  const [session, setSession] = useState<Session | null>(null);
+  const [searchParams] = useSearchParams();
+  const sessionKey = searchParams.get("session") ? Number(searchParams.get("session")) : undefined;
+
+  const { session, error: sessionError } = useLiveSession(sessionKey);
+
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [intervals, setIntervals] = useState<Interval[]>([]);
   const [weather, setWeather] = useState<WeatherReading[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [positionChanges, setPositionChanges] = useState<Map<number, "up" | "down">>(new Map());
-  const [recentPits, setRecentPits] = useState<Set<number>>(new Set());
-  const [fastestLapDriver, setFastestLapDriver] = useState<number | null>(null);
-  const [currentLap, setCurrentLap] = useState<number>(0);
-  const [currentTyres, setCurrentTyres] = useState<Map<number, string>>(new Map());
-  const [driverPenalties, setDriverPenalties] = useState<Map<number, string[]>>(new Map());
-  const [searchParams] = useSearchParams();
-  const driverFallbackCache = useRef<Map<number, Map<number, Driver>>>(new Map());
-  const prevPositions = useRef<Map<number, number> | null>(null);
-  const prevPitCounts = useRef<Map<number, number>>(new Map());
-  const fastestLapRef = useRef<{ time: number; driver: number; maxLap: number } | null>(null);
-  const lastUpdateTimes = useRef<Map<number, number>>(new Map());
-  const [retiredDrivers, setRetiredDrivers] = useState<Set<number>>(new Set());
+  const { enrichDrivers } = useDriverFallback();
+  const { processLaps, fastestLapDriver, setFastestLapDriver, currentLap, setCurrentLap } = useFastestLap();
+  const { positionChanges, detectChanges } = usePositionChanges();
+  const { recentPits, detectPits } = usePitDetection();
+  const { retiredDrivers, detectRetirements } = useRetirements();
+  const [rc, setRc] = useState<any[]>([]);
+  const [stints, setStints] = useState<Stint[]>([]);
+  const currentTyres = useTyres(stints, currentLap);
+  const driverPenalties = usePenalties(rc);
 
-  const sessionKey = searchParams.get("session") ? Number(searchParams.get("session")) : undefined;
-
+  // Data polling
   useEffect(() => {
+    if (!session) return;
     let mounted = true;
-    const interval = setInterval(
-      async () => {
-        try {
-          const sessionRes = sessionKey
-            ? await (await fetch(`/v1/sessions?session_key=${sessionKey}`)).json()
-            : await getLatestSession();
-          const sess = Array.isArray(sessionRes) ? sessionRes[0] : sessionRes;
-          if (!sess) return;
-          if (!mounted) return;
 
-          // Auto-detected session: only show if it's actually live right now
-          if (!sessionKey) {
-            const now = Date.now();
-            const start = new Date(sess.date_start).getTime();
-            const end = sess.date_end ? new Date(sess.date_end).getTime() : now;
-            if (now < start || now > end) {
-              // Session has ended (or hasn't started yet) — clear stale data
-              if (session) {
-                setSession(null);
-                setDrivers([]);
-                setPositions([]);
-              }
-              setError(null);
-              return;
-            }
-          }
+    const fetchData = async () => {
+      try {
+        const sk = session.session_key;
+        const [d, p, i, w, pits, s, rcData] = await Promise.all([
+          getDrivers(sk),
+          getPositions(sk),
+          getIntervals(sk),
+          getWeather(sk),
+          getPitStops(sk),
+          getStints(sk),
+          getRaceControl(sk),
+        ]);
+        if (!mounted) return;
 
-          setSession(sess);
+        // Enrich drivers with meeting-scoped fallback
+        const { drivers: enriched } = await enrichDrivers(d, session.meeting_key);
 
-          const sk = sess.session_key;
-          let [d, p, i, w, pits, stints, rc] = await Promise.all([
-            getDrivers(sk),
-            getPositions(sk),
-            getIntervals(sk),
-            getWeather(sk),
-            getPitStops(sk),
-            getStints(sk),
-            getRaceControl(sk),
-          ]);
+        setDrivers(enriched);
+        setPositions(p);
+        setIntervals(i);
+        setWeather(w);
+        setStints(s);
+        setRc(rcData);
+        setError(null);
 
-          // Enrich sparse driver data with meeting-scoped fallback
-          if (d.length < 10 && sess.meeting_key) {
-            let meetingCache = driverFallbackCache.current.get(sess.meeting_key);
-            if (!meetingCache) {
-              try {
-                const meetingDrivers = await getDrivers(undefined, sess.meeting_key);
-                meetingCache = new Map();
-                for (const dr of meetingDrivers) {
-                  if (!meetingCache.has(dr.driver_number)) {
-                    meetingCache.set(dr.driver_number, dr);
-                  }
-                }
-                driverFallbackCache.current.set(sess.meeting_key, meetingCache);
-              } catch {
-                // fallback failed
-              }
-            }
-            if (meetingCache) {
-              d = d.map((dr) => {
-                const fb = meetingCache!.get(dr.driver_number);
-                if (fb) {
-                  dr.broadcast_name = dr.broadcast_name || fb.broadcast_name;
-                  dr.full_name = dr.full_name || fb.full_name;
-                  dr.team_name = dr.team_name || fb.team_name;
-                  dr.team_colour = dr.team_colour || fb.team_colour;
-                  dr.name_acronym = dr.name_acronym || fb.name_acronym;
-                }
-                return dr;
-              });
-            }
-          }
+        // Process derived state
+        const { fastestLapDriver: flDriver, currentLap: cl } = processLaps(
+          await (await fetch(`/v1/laps?session_key=${sk}&lap_number>=0`)).json(),
+        );
+        if (flDriver !== null) setFastestLapDriver(flDriver);
+        if (cl > 0) setCurrentLap(cl);
 
-          if (!mounted) return;
-          setDrivers(d);
+        detectChanges(p);
+        detectPits(pits);
+        detectRetirements(enriched, p, rcData, s);
+      } catch (e: unknown) {
+        if (!mounted) return;
+        setError(e instanceof Error ? e.message : "Connection error");
+      }
+    };
 
-          // Track fastest lap
-          const prevMaxLap = fastestLapRef.current?.maxLap ?? 0;
-          try {
-            const lapData = await (
-              await fetch(`/v1/laps?session_key=${sk}&lap_number>=${prevMaxLap}`)
-            ).json();
-            if (Array.isArray(lapData) && lapData.length > 0) {
-              for (const lap of lapData) {
-                if (lap.lap_duration == null) continue;
-                if (!fastestLapRef.current || lap.lap_duration < fastestLapRef.current.time) {
-                  fastestLapRef.current = {
-                    time: lap.lap_duration,
-                    driver: lap.driver_number,
-                    maxLap: Math.max(fastestLapRef.current?.maxLap ?? 0, lap.lap_number),
-                  };
-                }
-              }
-              if (!fastestLapRef.current) {
-                // No valid laps yet
-              } else {
-                // Update maxLap to avoid re-fetching old data
-                const newMax = Math.max(...lapData.map((l: any) => l.lap_number ?? 0));
-                if (newMax > (fastestLapRef.current.maxLap ?? 0)) {
-                  fastestLapRef.current = { ...fastestLapRef.current, maxLap: newMax };
-                }
-              }
-            }
-          } catch {
-            // silent — lap fetch is non-critical
-          }
-          const flDriver = fastestLapRef.current?.driver ?? null;
-          if (flDriver !== fastestLapDriver) setFastestLapDriver(flDriver);
-          const cl = fastestLapRef.current?.maxLap ?? 0;
-          if (cl !== currentLap) setCurrentLap(cl);
-
-          // Detect position changes
-          const newPosMap = new Map<number, number>();
-          for (const pos of p) {
-            newPosMap.set(pos.driver_number, pos.position);
-          }
-          if (prevPositions.current && prevPositions.current.size > 0) {
-            const changes = new Map<number, "up" | "down">();
-            for (const [dn, newPos] of newPosMap) {
-              const oldPos = prevPositions.current.get(dn);
-              if (oldPos !== undefined && oldPos !== newPos) {
-                changes.set(dn, newPos < oldPos ? "up" : "down");
-              }
-            }
-            if (changes.size > 0) {
-              setPositionChanges(changes);
-              setTimeout(() => {
-                setPositionChanges(new Map());
-              }, 4000);
-            }
-          }
-          prevPositions.current = newPosMap;
-
-          // Detect new pit stops
-          const pitCounts = new Map<number, number>();
-          for (const pit of pits) {
-            pitCounts.set(pit.driver_number, (pitCounts.get(pit.driver_number) ?? 0) + 1);
-          }
-          const newPits = new Set<number>();
-          const isFirstRun = prevPitCounts.current.size === 0;
-          for (const [dn, count] of pitCounts) {
-            const prev = prevPitCounts.current.get(dn) ?? 0;
-            if (count > prev) {
-              newPits.add(dn);
-            }
-          }
-          if (!isFirstRun && newPits.size > 0) {
-            setRecentPits(newPits);
-            setTimeout(() => setRecentPits(new Set()), 20000);
-          }
-          prevPitCounts.current = pitCounts;
-
-          // Track last data update per driver and detect retirements
-          // Use actual data timestamps (not poll time) so stale drivers aren't masked
-          // by the API re-sending old records on every poll
-          for (const pos of p) {
-            const dateMs = new Date(pos.date).getTime();
-            const prev = lastUpdateTimes.current.get(pos.driver_number) ?? 0;
-            if (dateMs > prev) {
-              lastUpdateTimes.current.set(pos.driver_number, dateMs);
-            }
-          }
-          for (const iv of i) {
-            const dateMs = new Date(iv.date).getTime();
-            const prev = lastUpdateTimes.current.get(iv.driver_number) ?? 0;
-            if (dateMs > prev) {
-              lastUpdateTimes.current.set(iv.driver_number, dateMs);
-            }
-          }
-          if (d.length > 0) {
-            const staleTimeout = 180_000; // 3 min with no data = retired
-            const activeTimeout = 120_000; // 2 min = session still live
-            const now = Date.now();
-            const stale = new Set<number>();
-            for (const drv of d) {
-              const lastUpd = lastUpdateTimes.current.get(drv.driver_number);
-              if (lastUpd && now - lastUpd > staleTimeout) {
-                stale.add(drv.driver_number);
-              }
-            }
-            let sessionActive = false;
-            for (const drv of d) {
-              const lastUpd = lastUpdateTimes.current.get(drv.driver_number);
-              if (lastUpd && now - lastUpd <= activeTimeout) {
-                sessionActive = true;
-                break;
-              }
-            }
-            // Don't flag retirements during red flag (data stops for everyone)
-            const isRedFlag =
-              Array.isArray(rc) && rc.some((r: any) => (r.message || "").includes("RED FLAG"));
-            if (isRedFlag) {
-              // During red flag: compare lap counts to find genuine retirees.
-              // Drivers who retired stopped lapping early; those who stopped for
-              // the red flag are near the leader's lap count.
-              const maxLap = Math.max(...stints.map((stint: Stint) => stint.lap_end ?? 0), 0);
-              const redFlagStale = new Set<number>();
-              for (const drv of d) {
-                const driverStints = stints.filter(
-                  (stint: Stint) => stint.driver_number === drv.driver_number,
-                );
-                if (driverStints.length === 0) continue;
-                const lastLap = Math.max(
-                  ...driverStints.map((stint: Stint) => stint.lap_end ?? 0),
-                  0,
-                );
-                // 3+ laps behind the leader = retired before the red flag
-                if (lastLap > 0 && maxLap - lastLap >= 3) {
-                  redFlagStale.add(drv.driver_number);
-                }
-              }
-              setRetiredDrivers(new Set(redFlagStale));
-            } else if (sessionActive) {
-              setRetiredDrivers(new Set(stale));
-            }
-          }
-
-          // Derive current tyre compound for each driver
-          const tyreMap = new Map<number, string>();
-          const lapForTyres = currentLap || 9999;
-          for (const stint of stints) {
-            if (stint.lap_start <= lapForTyres && stint.lap_end >= lapForTyres) {
-              tyreMap.set(stint.driver_number, stint.compound);
-            }
-          }
-          // For drivers not on track, use their latest stint
-          const stintByDriver = new Map<number, Stint>();
-          for (const stint of stints) {
-            const existing = stintByDriver.get(stint.driver_number);
-            if (!existing || stint.stint_number > existing.stint_number) {
-              stintByDriver.set(stint.driver_number, stint);
-            }
-          }
-          for (const [dn, stint] of stintByDriver) {
-            if (!tyreMap.has(dn)) {
-              tyreMap.set(dn, stint.compound);
-            }
-          }
-          setCurrentTyres(tyreMap);
-
-          // Parse penalty status from race control messages
-          const penalties = new Map<number, string[]>();
-          const invCount = new Map<number, number>();
-          const penCount = new Map<number, number>();
-          if (Array.isArray(rc)) {
-            // Count open investigations and unresolved penalties per driver
-            // across ALL messages (order doesn't matter for addition/subtraction).
-            for (const entry of rc) {
-              const dn = extractDriver(entry);
-              if (!dn) continue;
-              const msg = entry.message || "";
-              if (msg.includes("UNDER INVESTIGATION")) {
-                invCount.set(dn, (invCount.get(dn) || 0) + 1);
-              } else if (
-                msg.includes("NO FURTHER ACTION") ||
-                msg.includes("NO FURTHER INVESTIGATION")
-              ) {
-                invCount.set(dn, (invCount.get(dn) || 0) - 1);
-              }
-              // Penalty messages also close the investigation
-              const isPenalty =
-                msg.includes("TIME PENALTY") ||
-                msg.includes("DRIVE THROUGH PENALTY") ||
-                msg.includes("STOP-GO PENALTY");
-              if (isPenalty && !msg.includes("SERVED") && !msg.includes("PENALTY SERVED")) {
-                penCount.set(dn, (penCount.get(dn) || 0) + 1);
-                invCount.set(dn, (invCount.get(dn) || 0) - 1);
-              }
-              if (msg.includes("PENALTY SERVED")) {
-                penCount.set(dn, (penCount.get(dn) || 0) - 1);
-              }
-            }
-            // Build status arrays from final counts
-            const allDns = new Set([...invCount.keys(), ...penCount.keys()]);
-            for (const dn of allDns) {
-              const statuses: string[] = [];
-              if ((invCount.get(dn) || 0) > 0) statuses.push("INVESTIGATION");
-              if ((penCount.get(dn) || 0) > 0) statuses.push("PENALTY");
-              if (statuses.length > 0) penalties.set(dn, statuses);
-            }
-          }
-          setDriverPenalties(penalties);
-
-          setPositions(p);
-          setIntervals(i);
-          setWeather(w);
-          setError(null);
-        } catch (e: unknown) {
-          if (!mounted) return;
-          setError(e instanceof Error ? e.message : "Connection error");
-        }
-      },
-      sessionKey ? 5000 : 3000,
-    );
-
+    fetchData();
+    const interval = setInterval(fetchData, 3000);
     return () => {
       mounted = false;
       clearInterval(interval);
     };
-  }, [sessionKey, currentLap, fastestLapDriver]);
+  }, [session, enrichDrivers, processLaps, setFastestLapDriver, setCurrentLap, detectChanges, detectPits, detectRetirements]);
 
   const latestWeather = weather.length > 0 ? weather[weather.length - 1] : null;
-  const latestPositions = positions.reduce((map, p) => {
-    map.set(p.driver_number, p);
+  const latestPositions = useMemo(() => {
+    const map = new Map<number, Position>();
+    for (const p of positions) {
+      map.set(p.driver_number, p);
+    }
     return map;
-  }, new Map<number, Position>());
+  }, [positions]);
+
   const driverNameMap = useMemo(() => {
     const map = new Map<number, string>();
     for (const d of drivers) {
@@ -365,6 +121,8 @@ export default function LiveDashboard() {
 
   const handleRefresh = useCallback(() => setError(null), []);
 
+  const displayError = sessionError || error;
+
   return (
     <div className="flex flex-col gap-3 p-4 h-full min-h-screen">
       <Header session={session} currentLap={currentLap} onRefresh={handleRefresh} />
@@ -372,9 +130,9 @@ export default function LiveDashboard() {
         <WeatherBar weather={latestWeather} />
         <TrackClock />
       </div>
-      {error && (
+      {displayError && (
         <div className="bg-f1-bg3 border border-f1-red/30 rounded-lg px-4 py-2 text-f1-red text-xs">
-          {error}
+          {displayError}
         </div>
       )}
       <div className="flex-1 grid grid-cols-[1fr_2fr] gap-3 min-h-0 max-lg:grid-cols-1">

@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import type React from "react";
 
 import { getSessions, getSessionResults, getStartingGrid, getDrivers } from "@/api/openf1";
-import LiveDataSections from "@/components/LiveDataSections";
-import SessionResults from "@/components/SessionResults";
+import LiveDataSections from "@/components/live/LiveDataSections";
+import SessionResults from "@/components/historical/SessionResults";
+import { countryFlag, SESSION_TYPE_LABELS } from "@/constants/f1";
 import type { Meeting, Session, SessionResult } from "@/types/api";
 
 interface MeetingDetailProps {
@@ -12,23 +13,6 @@ interface MeetingDetailProps {
   sessionKey?: number;
   onSessionSelect?: (session: Session) => void;
 }
-
-function countryFlag(countryCode: string): string {
-  if (!countryCode || countryCode.length !== 2) return "🏁";
-  const offset = 0x1f1e6 - 65;
-  return String.fromCodePoint(
-    countryCode.charCodeAt(0) + offset,
-    countryCode.charCodeAt(1) + offset,
-  );
-}
-
-const SESSION_TYPE_LABELS: Record<string, string> = {
-  Practice: "Practice",
-  Qualifying: "Qualifying",
-  Race: "Race",
-  Sprint: "Sprint",
-  SprintQualifying: "Sprint Qualifying",
-};
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);

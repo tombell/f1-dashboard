@@ -1,3 +1,4 @@
+import { countryFlag } from "@/constants/f1";
 import type { Meeting } from "@/types/api";
 
 interface MeetingCalendarProps {
@@ -15,15 +16,6 @@ function getStatus(meeting: Meeting): MeetingStatus {
   if (now > end) return "completed";
   if (now >= start && now <= end) return "ongoing";
   return "upcoming";
-}
-
-function countryFlag(countryCode: string): string {
-  if (!countryCode) return "🏁";
-  // Convert country code to regional indicator symbols
-  const code = countryCode.toUpperCase();
-  if (code.length !== 2) return "🏁";
-  const offset = 0x1f1e6 - 65;
-  return String.fromCodePoint(code.charCodeAt(0) + offset, code.charCodeAt(1) + offset);
 }
 
 function formatDateRange(start: string, end: string): string {
