@@ -370,9 +370,9 @@ function RaceTable({ results }: { results: SessionResult[] }) {
       </thead>
       <tbody>
         {results.map((r) => {
-          const isDNF = r.status === "DNF" || r.classified === "DNF";
-          const isDNS = r.status === "DNS" || r.classified === "DNS";
-          const isDSQ = r.status === "DSQ" || r.classified === "DSQ";
+          const isDNF = r.dnf === true || r.status === "DNF" || r.classified === "DNF";
+          const isDNS = r.dns === true || r.status === "DNS" || r.classified === "DNS";
+          const isDSQ = r.dsq === true || r.status === "DSQ" || r.classified === "DSQ";
           const statusLabel = isDNF ? "DNF" : isDNS ? "DNS" : isDSQ ? "DSQ" : null;
           const time =
             r.duration != null && !Array.isArray(r.duration) ? raceTime(r.duration as number) : "-";
@@ -385,10 +385,7 @@ function RaceTable({ results }: { results: SessionResult[] }) {
               } ${isDNF || isDNS || isDSQ ? "text-f1-dim" : ""}`}
             >
               <td className={`px-3 py-2 text-xs font-bold ${posColor(r.position)}`}>
-                P{r.position ?? "—"}
-                {statusLabel && (
-                  <span className="text-f1-red text-[10px] font-semibold ml-1">{statusLabel}</span>
-                )}
+                {statusLabel || `P${r.position ?? "—"}`}
               </td>
               <td className="px-3 py-2 text-xs">
                 <span style={driverColorStyle(r.team_colour)} className="font-semibold">

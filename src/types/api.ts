@@ -52,6 +52,9 @@ export interface SessionResult {
   gap_to_leader?: number;
   interval?: string; // interval to prev driver
   points?: number;
+  dnf?: boolean;
+  dns?: boolean;
+  dsq?: boolean;
   classified?: string;
   status?: string;
   grid_position?: number;
