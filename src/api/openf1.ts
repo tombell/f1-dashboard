@@ -8,7 +8,7 @@ async function fetchJson<T>(url: string): Promise<T> {
   return res.json();
 }
 
-export function buildQuery(params: Record<string, string | number | undefined | null>): string {
+function buildQuery(params: Record<string, string | number | undefined | null>): string {
   const parts = Object.entries(params)
     .filter(([_, v]) => v !== undefined && v !== null && v !== "")
     .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`);
@@ -21,7 +21,7 @@ export async function getMeetings(year?: number) {
   return fetchJson<import("../types/api").Meeting[]>(`/meetings${q}`);
 }
 
-export async function getMeeting(meetingKey: number) {
+async function getMeeting(meetingKey: number) {
   const q = buildQuery({ meeting_key: meetingKey });
   const results = await fetchJson<import("../types/api").Meeting[]>(`/meetings${q}`);
   return results[0] || null;
@@ -33,7 +33,7 @@ export async function getSessions(meetingKey?: number, year?: number) {
   return fetchJson<import("../types/api").Session[]>(`/sessions${q}`);
 }
 
-export async function getSession(sessionKey: number) {
+async function getSession(sessionKey: number) {
   const results = await fetchJson<import("../types/api").Session[]>(
     `/sessions?session_key=${sessionKey}`,
   );
@@ -80,7 +80,7 @@ export async function getIntervals(sessionKey: number) {
 }
 
 // Car Data
-export async function getCarData(sessionKey: number, driverNumber?: number) {
+async function getCarData(sessionKey: number, driverNumber?: number) {
   const q = buildQuery({ session_key: sessionKey, driver_number: driverNumber });
   return fetchJson<import("../types/api").CarData[]>(`/car_data${q}`);
 }
@@ -108,13 +108,13 @@ export async function getRaceControl(sessionKey: number) {
 }
 
 // Championship Drivers
-export async function getChampionshipDrivers(sessionKey?: number) {
+async function getChampionshipDrivers(sessionKey?: number) {
   const q = buildQuery({ session_key: sessionKey });
   return fetchJson<import("../types/api").ChampionshipDriver[]>(`/championship_drivers${q}`);
 }
 
 // Location
-export async function getLocation(sessionKey: number) {
+async function getLocation(sessionKey: number) {
   return fetchJson<unknown[]>(`/location?session_key=${sessionKey}`);
 }
 
@@ -126,6 +126,6 @@ export async function getTeamRadio(sessionKey: number) {
 }
 
 // Overtakes
-export async function getOvertakes(sessionKey: number) {
+async function getOvertakes(sessionKey: number) {
   return fetchJson<import("../types/api").Overtake[]>(`/overtakes?session_key=${sessionKey}`);
 }
