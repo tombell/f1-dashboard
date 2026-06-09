@@ -119,7 +119,3 @@ The app uses Tailwind v4's `@theme` directive with F1-specific colours:
   /* ... team colours for all 11 teams */
 }
 ```
-
-## Porting Note
-
-This app replaces a pair of monolithic single-file HTML dashboards that previously lived inside the openf1 repo. It now lives independently.
