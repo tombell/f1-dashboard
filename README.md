@@ -80,26 +80,23 @@ Then open `http://localhost:8080/` for the live dashboard or `http://localhost:8
 
 ## API Layer
 
-The `src/api/openf1.ts` client covers every OpenF1 endpoint with typed responses:
+The `src/api/openf1.ts` client covers every OpenF1 endpoint used by the app, with typed responses:
 
 | Endpoint | Function | Returns |
 |---|---|---|
 | `/v1/meetings` | `getMeetings(year?)` | `Meeting[]` |
 | `/v1/sessions` | `getSessions(meetingKey?, year?)` | `Session[]` |
+| `/v1/sessions?session_key=latest` | `getLatestSession()` | `Session` |
 | `/v1/session_result` | `getSessionResults(meetingKey, sessionKey?)` | `SessionResult[]` |
 | `/v1/starting_grid` | `getStartingGrid(meetingKey, sessionKey?)` | `SessionResult[]` |
-| `/v1/drivers` | `getDrivers(sessionKey)` | `Driver[]` |
+| `/v1/drivers` | `getDrivers(sessionKey?, meetingKey?)` | `Driver[]` |
 | `/v1/laps` | `getLaps(sessionKey, driverNumber?)` | `Lap[]` |
 | `/v1/position` | `getPositions(sessionKey)` | `Position[]` |
-| `/v1/car_data` | `getCarData(sessionKey, driverNumber?)` | `CarData[]` |
 | `/v1/intervals` | `getIntervals(sessionKey)` | `Interval[]` |
 | `/v1/pit` | `getPitStops(sessionKey)` | `PitStop[]` |
 | `/v1/stints` | `getStints(sessionKey)` | `Stint[]` |
 | `/v1/weather` | `getWeather(sessionKey)` | `WeatherReading[]` |
 | `/v1/race_control` | `getRaceControl(sessionKey)` | `RaceControlMessage[]` |
-| `/v1/championship_drivers` | `getChampionshipDrivers(sessionKey?)` | `ChampionshipDriver[]` |
-| `/v1/overtakes` | `getOvertakes(sessionKey)` | `Overtake[]` |
+| `/v1/team_radio` | `getTeamRadio(sessionKey)` | `TeamRadioEntry[]` |
 
 All functions accept optional query parameters via `buildQuery()` and return typed arrays.
-
-
