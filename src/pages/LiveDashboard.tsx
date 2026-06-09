@@ -59,6 +59,24 @@ export default function LiveDashboard() {
           const sess = Array.isArray(sessionRes) ? sessionRes[0] : sessionRes;
           if (!sess) return;
           if (!mounted) return;
+
+          // Auto-detected session: only show if it's actually live right now
+          if (!sessionKey) {
+            const now = Date.now();
+            const start = new Date(sess.date_start).getTime();
+            const end = sess.date_end ? new Date(sess.date_end).getTime() : now;
+            if (now < start || now > end) {
+              // Session has ended (or hasn't started yet) — clear stale data
+              if (session) {
+                setSession(null);
+                setDrivers([]);
+                setPositions([]);
+              }
+              setError(null);
+              return;
+            }
+          }
+
           setSession(sess);
 
           const sk = sess.session_key;
