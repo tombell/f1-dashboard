@@ -9,6 +9,7 @@ import urllib.request
 import urllib.error
 import os
 import sys
+import subprocess
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
 API_TARGET = "http://localhost:8000"
@@ -21,6 +22,8 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=STATIC_DIR, **kwargs)
 
     def do_GET(self):
+        if self.path.startswith("/v1/radio-proxy/"):
+            return self._proxy_team_radio()
         if self.path.startswith("/v1/"):
             return self._proxy_api()
         if not self._is_static_path():
@@ -44,6 +47,33 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "*")
         self.end_headers()
+
+    def _proxy_team_radio(self):
+        """Proxy team radio audio through the SSH tunnel using curl --connect-to."""
+        path = self.path[len("/v1/radio-proxy/"):]
+        url = f"https://livetiming.formula1.com/static/{path}"
+        cmd = [
+            "curl", "-s",
+            "--connect-to", "livetiming.formula1.com:443:localhost:1443",
+            url,
+        ]
+        try:
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            self.send_response(200)
+            self.send_header("Content-Type", "audio/mpeg")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            while True:
+                chunk = proc.stdout.read(65536)
+                if not chunk:
+                    break
+                self.wfile.write(chunk)
+            proc.wait()
+        except Exception as e:
+            self.send_response(502)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(f'{{"error": "Radio proxy failed: {str(e)}"}}'.encode())
 
     def _proxy_api(self):
         target_url = f"{API_TARGET}{self.path}"
