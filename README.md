@@ -82,24 +82,46 @@ Then open `http://localhost:8080/` for the live dashboard or `http://localhost:8
 
 ```
 src/
-├── main.tsx                  # React root, BrowserRouter setup
-├── App.tsx                   # Route definitions (/, /historical)
-├── index.css                 # Tailwind v4 import + F1 theme variables
-├── types/api.ts              # Full OpenF1 API TypeScript interfaces
-├── api/openf1.ts             # Typed API client (all endpoints)
+├── main.tsx                     # React root, BrowserRouter setup
+├── App.tsx                      # Route definitions (/, /historical)
+├── index.css                    # Tailwind v4 import + F1 theme variables
+├── constants/f1.ts              # Compound colours, polling intervals, session labels
+├── types/api.ts                 # Full OpenF1 API TypeScript interfaces
+├── api/openf1.ts                # Typed API client (all endpoints)
+├── hooks/                       # Extracted logic from LiveDashboard
+│   ├── useLiveSession.ts        # Session polling + stale guard
+│   ├── useDriverFallback.ts     # Driver enrichment with meeting cache
+│   ├── useFastestLap.ts         # Fastest lap detection
+│   ├── usePositionChanges.ts    # Position change tracking
+│   ├── usePitDetection.ts       # Pit stop change detection
+│   ├── useRetirements.ts        # Stale driver / red flag detection
+│   ├── useTyres.ts              # Tyre compound derivation
+│   └── usePenalties.ts          # Race control penalty parsing
 ├── pages/
-│   ├── LiveDashboard.tsx     # Live timing page (polls every 3s)
-│   └── HistoricalBrowser.tsx # Historical browser (year picker, tabs, deep links)
+│   ├── LiveDashboard.tsx        # Live timing page (orchestrates hooks)
+│   └── HistoricalBrowser.tsx    # Historical browser (year picker, tabs, deep links)
 └── components/
-    ├── Header.tsx            # Nav bar with session info and countdown
-    ├── WeatherBar.tsx        # Current weather conditions strip
-    ├── TimingTower.tsx       # Driver positions with team-coloured left border
-    ├── RaceControl.tsx       # Flag and message feed
-    ├── MeetingCalendar.tsx   # Meeting grid with status badges
-    ├── MeetingDetail.tsx     # Meeting info card and session list
-    ├── SessionResults.tsx    # Practice / Qualifying (per-segment) / Race tables
-    ├── StandingsView.tsx     # Championship standings with "as of" selector
-    └── LiveDataSections.tsx  # Lap summaries, pits, stints, weather history, positions
+    ├── live/                    # Live dashboard components
+    │   ├── LiveDataSections.tsx # Orchestrator: lap/pit/stint/position sub-tabs — also used by historical browser
+    │   ├── LapTimesTable.tsx    # Per-driver lap time table
+    │   ├── PitStopsTable.tsx    # Pit stop log
+    │   ├── TyreStints.tsx       # Colour-coded stint overview
+    │   ├── PositionChangesTable.tsx
+    │   ├── DriverCell.tsx       # Driver name + team badge
+    │   ├── LiveSection.tsx      # Generic tab-section wrapper
+    │   ├── TimingTower.tsx      # Driver positions with team-coloured border
+    │   ├── RaceControl.tsx      # Flag and message feed
+    │   ├── TeamRadio.tsx        # Team radio player
+    │   ├── TrackClock.tsx       # Session clock/countdown
+    │   ├── WeatherBar.tsx       # Current weather conditions strip
+    │   └── WeatherChart.tsx     # Weather history chart
+    ├── historical/              # Historical browser components
+    │   ├── MeetingCalendar.tsx  # Meeting grid with status badges
+    │   ├── MeetingDetail.tsx    # Meeting info card and session list
+    │   ├── SessionResults.tsx   # Practice / Qualifying / Race tables
+    │   └── StandingsView.tsx    # Championship standings
+    └── shared/                  # Shared across both pages
+        └── Header.tsx           # Main nav header
 ```
 
 ## API Layer
@@ -144,21 +166,6 @@ The app uses Tailwind v4's `@theme` directive with F1-specific colours:
 }
 ```
 
-## Development
-
-```bash
-pnpm dev       # HMR dev server on :5173
-pnpm build     # Production build → dist/
-pnpm preview   # Preview production build
-pnpm lint      # Check linting
-pnpm fmt       # Format source files
-pnpm check     # TypeScript + lint + format check
-```
-
-All tools passed on the current codebase:
-- **oxlint** — 96 rules, 0 errors (9 unused-variable warnings, pre-existing)
-- **oxfmt** — Prettier-compatible Rust formatter, 16 files pass
-
 ## Porting Note
 
-This app replaces a pair of monolithic single-file HTML dashboards (`index.html` and `historical.html` that previously lived at `~/workspace/openf1/dashboard/`). The project now lives independently at `~/workspace/f1-dashboard/`.
+This app replaces a pair of monolithic single-file HTML dashboards that previously lived inside the openf1 repo. It now lives independently.
