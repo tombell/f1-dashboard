@@ -102,20 +102,4 @@ The `src/api/openf1.ts` client covers every OpenF1 endpoint with typed responses
 
 All functions accept optional query parameters via `buildQuery()` and return typed arrays.
 
-## Theming
 
-The app uses Tailwind v4's `@theme` directive with F1-specific colours:
-
-```css
-@theme {
-  --color-f1-bg: #0a0a0f;
-  --color-f1-bg2: #12121a;
-  --color-f1-bg3: #1a1a28;
-  --color-f1-red: #e10600;
-  --color-f1-green: #00c853;
-  --color-mclaren: #ff8700;
-  --color-ferrari: #dc0000;
-  --color-mercedes: #00d2be;
-  /* ... team colours for all 11 teams */
-}
-```
