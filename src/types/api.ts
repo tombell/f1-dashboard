@@ -14,6 +14,7 @@ export interface Meeting {
   date_end: string;
   year: number;
   gmt_offset: string;
+  is_cancelled?: boolean;
 }
 
 export interface Session {
@@ -28,6 +29,7 @@ export interface Session {
   meeting_name?: string;
   circuit_short_name?: string;
   country_code?: string;
+  is_cancelled?: boolean;
 }
 
 export interface SessionResult {

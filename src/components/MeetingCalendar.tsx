@@ -5,7 +5,10 @@ interface MeetingCalendarProps {
   onSelect: (meeting: Meeting) => void;
 }
 
-function getStatus(meeting: Meeting): "completed" | "ongoing" | "upcoming" {
+type MeetingStatus = "completed" | "ongoing" | "upcoming" | "cancelled";
+
+function getStatus(meeting: Meeting): MeetingStatus {
+  if (meeting.is_cancelled) return "cancelled";
   const now = Date.now();
   const start = new Date(meeting.date_start).getTime();
   const end = new Date(meeting.date_end).getTime();
@@ -44,31 +47,48 @@ export default function MeetingCalendar({ meetings, onSelect }: MeetingCalendarP
     );
   }
 
+  // Sort by date — cancelled stays in chronological position
+  const sorted = [...meetings].toSorted(
+    (a, b) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime()
+  );
+
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-2.5">
-      {meetings.map((meeting) => {
+      {sorted.map((meeting) => {
         const status = getStatus(meeting);
         const flag = countryFlag(meeting.country_code);
+        const isCancelled = status === "cancelled";
 
         return (
           <button
             key={meeting.meeting_key}
             /* eslint-disable-next-line react-perf/jsx-no-new-function-as-prop */
-            onClick={() => onSelect(meeting)}
+            onClick={() => !isCancelled && onSelect(meeting)}
             /* eslint-disable-next-line react-perf/jsx-no-new-function-as-prop */
             onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
+              if (!isCancelled && (e.key === "Enter" || e.key === " ")) {
                 e.preventDefault();
                 onSelect(meeting);
               }
             }}
             type="button"
-            className="w-full text-left bg-f1-bg2 border border-f1-border rounded-lg p-3.5 cursor-pointer transition-all hover:bg-f1-bg3 hover:border-f1-red hover:-translate-y-px relative overflow-hidden font-inherit"
+            disabled={isCancelled}
+            className={`w-full text-left bg-f1-bg2 border rounded-lg p-3.5 transition-all relative overflow-hidden font-inherit ${
+              isCancelled
+                ? "border-f1-border/40 opacity-45 cursor-not-allowed"
+                : "border-f1-border cursor-pointer hover:bg-f1-bg3 hover:border-f1-red hover:-translate-y-px"
+            }`}
           >
-            <span className="absolute right-3 top-3 text-3xl leading-none opacity-60">{flag}</span>
+            <span className="absolute right-3 top-3 text-3xl leading-none opacity-40">{flag}</span>
 
-            <div className="text-sm font-semibold text-f1-bright mb-1 pr-12">
-              {meeting.meeting_name}
+            <div className="text-sm font-semibold mb-1 pr-12 flex items-center gap-2">
+              {isCancelled ? (
+                <>
+                  <span className="line-through text-f1-dim">{meeting.meeting_name}</span>
+                </>
+              ) : (
+                <span className="text-f1-bright">{meeting.meeting_name}</span>
+              )}
             </div>
             <div className="text-xs text-f1-dim">{meeting.circuit_short_name}</div>
             <div className="text-[11px] text-f1-dim mt-1.5">
@@ -85,20 +105,28 @@ export default function MeetingCalendar({ meetings, onSelect }: MeetingCalendarP
   );
 }
 
-function StatusBadge({ status }: { status: "completed" | "ongoing" | "upcoming" }) {
-  const styles = {
-    completed: "bg-f1-green text-black",
-    ongoing: "bg-f1-orange text-black",
-    upcoming: "bg-f1-bg4 text-f1-dim",
-  };
+const statusStyles: Record<MeetingStatus, string> = {
+  completed: "bg-f1-green text-black",
+  ongoing: "bg-f1-orange text-black",
+  upcoming: "bg-f1-bg4 text-f1-dim",
+  cancelled: "bg-f1-red/20 text-f1-red border border-f1-red/30",
+};
 
+const statusLabels: Record<MeetingStatus, string> = {
+  completed: "COMPLETED",
+  ongoing: "LIVE",
+  upcoming: "UPCOMING",
+  cancelled: "CANCELLED",
+};
+
+function StatusBadge({ status }: { status: MeetingStatus }) {
   return (
     <span
       className={`px-2 py-0.5 rounded text-[10px] font-semibold tracking-wider inline-block ${
-        styles[status]
+        statusStyles[status]
       }`}
     >
-      {status.toUpperCase()}
+      {statusLabels[status]}
     </span>
   );
 }
