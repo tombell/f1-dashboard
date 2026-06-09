@@ -116,15 +116,19 @@ export default function MeetingDetail({
           });
         }
 
-        // If driver data is empty for this session, fall back to meeting-scoped registry
-        if (nameMap.size < 10 && selectedSession.meeting_key) {
+        // If driver data is missing team info (e.g. session-scoped data has null team_name/team_colour),
+        // fall back to meeting-scoped registry which has the full enriched data
+        const hasTeamData = drivers.some((d) => d.team_name != null);
+        if (!hasTeamData && selectedSession.meeting_key) {
           try {
             const meetingDrivers = await getDrivers(undefined, selectedSession.meeting_key);
             for (const d of meetingDrivers) {
-              if (!nameMap.has(d.driver_number)) {
+              const existing = nameMap.get(d.driver_number);
+              // Overwrite existing entry if it lacks team data, or add new entries
+              if (!existing || !existing.team_name) {
                 nameMap.set(d.driver_number, {
-                  broadcast_name: d.broadcast_name,
-                  full_name: d.full_name,
+                  broadcast_name: d.broadcast_name || existing?.broadcast_name || "",
+                  full_name: d.full_name || existing?.full_name || "",
                   team_name: d.team_name,
                   team_colour: d.team_colour,
                 });
