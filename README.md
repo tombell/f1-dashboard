@@ -8,9 +8,11 @@ Built with React 19, Vite 6, Tailwind v4, and pnpm.
 
 ### Live Dashboard (`/`)
 - **Timing Tower** — driver positions with team colours, gaps, intervals (polls every 3s)
-- **Weather Bar** — air/track temp, humidity, wind, rainfall
+- **Track Clock** — session elapsed time in track timezone, live indicator during races
+- **Weather Bar** — air/track temp, humidity, wind, pressure, rainfall
 - **Race Control** — live flag notifications and messages
-- Countdown to upcoming sessions, live indicator during races
+- **Team Radio** — play driver team radio audio clips
+- **Live Data Sections** — expandable panels for lap times, pit stops, tyre stints (colour-coded compounds), weather history chart, and position changes
 
 ### Historical Browser (`/historical`)
 - **Meeting Calendar** — browse all Grands Prix for 2018–2026, filter by status and search
@@ -18,7 +20,8 @@ Built with React 19, Vite 6, Tailwind v4, and pnpm.
 - **Qualifying Per-Segment Fastest** — 🏁 Q1/Q2/Q3 badges highlight the fastest driver in each segment, with orange-bold time cells (also supports Sprint SQ1/SQ2/SQ3)
 - **Starting Grid** — grid positions with lap times
 - **Championship Standings** — driver standings with "as of" meeting selector
-- **Live Data Sections** — lap summaries, pit stops, tyre stints (colour-coded compounds), weather history, position changes, race control log
+- **Session Data Sections** — lap summaries, pit stops, tyre stints (colour-coded compounds), weather history, position changes, race control log
+- **Team Radio** — browse and play historical team radio clips
 - **Deep Linking** — all state (year, meeting, session, view) syncs to URL query params
 
 ## Prerequisites
