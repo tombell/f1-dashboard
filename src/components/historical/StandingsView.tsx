@@ -356,8 +356,9 @@ export default function StandingsView({ meetings, year: _year }: StandingsViewPr
 }
 
 function posCls(idx: number): string {
-  if (idx === 0) return "text-f1-green";
-  if (idx === 1 || idx === 2) return "text-f1-blue";
+  if (idx === 0) return "text-f1-gold";
+  if (idx === 1) return "text-f1-silver";
+  if (idx === 2) return "text-f1-bronze";
   return "text-f1-dim";
 }
 

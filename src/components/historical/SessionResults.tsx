@@ -175,8 +175,9 @@ export default function SessionResults({
 }
 
 function posColor(pos: number | null): string {
-  if (pos === 1) return "text-f1-green";
-  if (pos === 2 || pos === 3) return "text-f1-blue";
+  if (pos === 1) return "text-f1-gold";
+  if (pos === 2) return "text-f1-silver";
+  if (pos === 3) return "text-f1-bronze";
   return "text-f1-bright";
 }
 
