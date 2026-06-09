@@ -12,6 +12,7 @@ import {
 import type { Lap, PitStop, Stint, WeatherReading, RaceControlMessage, Position, Driver } from "@/types/api";
 
 import RaceControl from "./RaceControl";
+import TeamRadio from "./TeamRadio";
 import WeatherChart from "../shared/WeatherChart";
 import LapTimesTable from "./LapTimesTable";
 import PitStopsTable from "./PitStopsTable";
@@ -142,6 +143,17 @@ export default function LiveDataSections({ sessionKey, meetingKey, sessionName }
 
       <LiveSection title="🚩 Race Control" sectionKey="rc" collapsed={collapsed} onToggle={handleToggle}>
         <RaceControl sessionKey={sessionKey} />
+      </LiveSection>
+
+      <LiveSection title="📻 Team Radio" sectionKey="radio" collapsed={collapsed} onToggle={handleToggle}>
+        <TeamRadio
+          sessionKey={sessionKey}
+          drivers={
+            new Map(
+              [...driverMap.entries()].map(([n, d]) => [n, d.name_acronym]),
+            ) as Map<number, string>
+          }
+        />
       </LiveSection>
     </div>
   );
