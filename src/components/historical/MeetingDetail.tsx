@@ -37,6 +37,7 @@ export default function MeetingDetail({
   const [results, setResults] = useState<SessionResult[]>([]);
   const [grid, setGrid] = useState<SessionResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resultsLoading, setResultsLoading] = useState(false);
 
   // Pre-season testing — no historical data available
   const isTesting =
@@ -94,6 +95,7 @@ export default function MeetingDetail({
     let mounted = true;
 
     const loadResults = async () => {
+      setResultsLoading(true);
       try {
         const [sr, sg, drivers] = await Promise.all([
           getSessionResults(meeting.meeting_key, selectedSession.session_key),
@@ -157,10 +159,12 @@ export default function MeetingDetail({
 
         setResults(enrich(sr));
         setGrid(enrich(sg));
+        setResultsLoading(false);
       } catch {
         if (!mounted) return;
         setResults([]);
         setGrid([]);
+        setResultsLoading(false);
       }
     };
 
@@ -175,6 +179,9 @@ export default function MeetingDetail({
 
   const handleSessionClick = useCallback(
     (s: Session) => {
+      setResults([]);
+      setGrid([]);
+      setResultsLoading(true);
       setSelectedSession(s);
       onSessionSelect?.(s);
     },
@@ -300,7 +307,13 @@ export default function MeetingDetail({
 
           {!loading && selectedSession && !isTesting && (
             <>
-              {sessionHasResults && (
+              {resultsLoading && (
+                <div className="bg-f1-bg2 border border-f1-border rounded-lg py-6 text-center text-f1-dim text-sm">
+                  <span className="inline-block animate-spin mr-2">⟳</span>
+                  Loading session data...
+                </div>
+              )}
+              {!resultsLoading && sessionHasResults && (
                 <SessionResults
                   results={results}
                   grid={grid}
@@ -323,7 +336,7 @@ export default function MeetingDetail({
             </div>
           )}
 
-          {!loading && selectedSession && !sessionHasResults && (
+          {!loading && selectedSession && !sessionHasResults && !resultsLoading && (
             <div className="bg-f1-bg2 border border-f1-border rounded-lg py-8 text-center text-f1-dim text-sm">
               <span className="text-4xl mb-3 opacity-40" aria-hidden="true">
                 📭
