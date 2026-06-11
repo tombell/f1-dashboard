@@ -180,6 +180,16 @@ export interface RaceControlMessage {
   lap_number: number | null;
 }
 
+export interface Location {
+  session_key: number;
+  meeting_key: number;
+  driver_number: number;
+  x: number;
+  y: number;
+  z: number | null;
+  date: string;
+}
+
 export interface Overtake {
   session_key: number;
   meeting_key: number;

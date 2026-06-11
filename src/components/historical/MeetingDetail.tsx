@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import type React from "react";
 
 import { getSessions, getSessionResults, getStartingGrid, getDrivers } from "@/api/openf1";
-import LiveDataSections from "@/components/live/LiveDataSections";
 import SessionResults from "@/components/historical/SessionResults";
+import LiveDataSections from "@/components/live/LiveDataSections";
 import { countryFlag, SESSION_TYPE_LABELS } from "@/constants/f1";
 import type { Meeting, Session, SessionResult } from "@/types/api";
 
@@ -64,7 +64,7 @@ export default function MeetingDetail({
         if (!mounted) return;
         setSessions(data);
 
-        // Auto-select first session that matches initialSessionKey or has results
+        // Auto-select first session that matches initialSessionKey
         if (initialSessionKey) {
           const found = data.find((s) => s.session_key === initialSessionKey);
           if (found) {
@@ -87,7 +87,13 @@ export default function MeetingDetail({
     return () => {
       mounted = false;
     };
-  }, [meeting.meeting_key, initialSessionKey]);
+    // Only run on mount or when meeting changes — initialSessionKey is only
+    // for the initial auto-select; switching sessions is handled by the click
+    // handler + the results effect below. Depending on initialSessionKey here
+    // causes a redundant re-fetch (and double loading text) when the user
+    // clicks a different session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meeting.meeting_key]);
 
   // Load results when a session is selected
   useEffect(() => {
@@ -240,12 +246,14 @@ export default function MeetingDetail({
             <div>
               <div className="text-xs font-semibold text-f1-red">CANCELLED</div>
               <div className="text-[11px] text-f1-dim mt-0.5">
-                This Grand Prix weekend was cancelled due to severe flooding in the Emilia-Romagna region.
+                This Grand Prix weekend was cancelled due to severe flooding in the Emilia-Romagna
+                region.
               </div>
             </div>
           </div>
         )}
-        {!meeting.is_cancelled && meeting.meeting_official_name &&
+        {!meeting.is_cancelled &&
+          meeting.meeting_official_name &&
           meeting.meeting_official_name !== meeting.meeting_name && (
             <div className="mt-2 text-xs text-f1-dim leading-relaxed bg-f1-bg3 rounded-lg p-3">
               {meeting.meeting_official_name}
@@ -257,12 +265,10 @@ export default function MeetingDetail({
       {meeting.is_cancelled ? (
         <div className="bg-f1-bg2 border border-f1-border/40 rounded-lg py-10 text-center">
           <div className="text-5xl mb-3 opacity-40">🌧️</div>
-          <div className="text-sm font-semibold text-f1-dim mb-1">
-            Weekend Cancelled
-          </div>
+          <div className="text-sm font-semibold text-f1-dim mb-1">Weekend Cancelled</div>
           <div className="text-xs text-f1-dim/60 max-w-md mx-auto px-4">
-            The 2023 Emilia Romagna Grand Prix at Imola was called off due to extreme
-            flooding and severe weather across the region. No sessions were held.
+            The 2023 Emilia Romagna Grand Prix at Imola was called off due to extreme flooding and
+            severe weather across the region. No sessions were held.
           </div>
         </div>
       ) : (
@@ -303,7 +309,9 @@ export default function MeetingDetail({
           </div>
 
           {/* Results */}
-          {loading && <div className="text-center py-4 text-f1-dim text-sm">Loading sessions...</div>}
+          {loading && (
+            <div className="text-center py-4 text-f1-dim text-sm">Loading sessions...</div>
+          )}
 
           {!loading && selectedSession && !isTesting && (
             <>

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+
 import type { Lap } from "@/types/api";
 
 interface UseFastestLapResult {
@@ -18,7 +19,6 @@ export function useFastestLap() {
   const [currentLap, setCurrentLap] = useState<number>(0);
 
   function processLaps(laps: Lap[]): UseFastestLapResult {
-    const prevMax = ref.current?.maxLap ?? 0;
     for (const lap of laps) {
       if (lap.lap_duration == null) continue;
       if (!ref.current || lap.lap_duration < ref.current.time) {

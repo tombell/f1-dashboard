@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import {
@@ -10,22 +10,22 @@ import {
   getStints,
   getRaceControl,
 } from "@/api/openf1";
-import Header from "@/components/shared/Header";
 import RaceControl from "@/components/live/RaceControl";
 import TeamRadio from "@/components/live/TeamRadio";
 import TimingTower from "@/components/live/TimingTower";
 import TrackClock from "@/components/live/TrackClock";
+import TrackMap from "@/components/live/TrackMap";
 import WeatherBar from "@/components/live/WeatherBar";
-import type { Session, Driver, Position, Interval, WeatherReading, Stint } from "@/types/api";
-
-import { useLiveSession } from "@/hooks/useLiveSession";
+import Header from "@/components/shared/Header";
 import { useDriverFallback } from "@/hooks/useDriverFallback";
 import { useFastestLap } from "@/hooks/useFastestLap";
-import { usePositionChanges } from "@/hooks/usePositionChanges";
+import { useLiveSession } from "@/hooks/useLiveSession";
+import { usePenalties } from "@/hooks/usePenalties";
 import { usePitDetection } from "@/hooks/usePitDetection";
+import { usePositionChanges } from "@/hooks/usePositionChanges";
 import { useRetirements } from "@/hooks/useRetirements";
 import { useTyres } from "@/hooks/useTyres";
-import { usePenalties } from "@/hooks/usePenalties";
+import type { Driver, Position, Interval, WeatherReading, Stint } from "@/types/api";
 
 export default function LiveDashboard() {
   const [searchParams] = useSearchParams();
@@ -39,7 +39,8 @@ export default function LiveDashboard() {
   const [weather, setWeather] = useState<WeatherReading[]>([]);
   const [error, setError] = useState<string | null>(null);
   const { enrichDrivers } = useDriverFallback();
-  const { processLaps, fastestLapDriver, setFastestLapDriver, currentLap, setCurrentLap } = useFastestLap();
+  const { processLaps, fastestLapDriver, setFastestLapDriver, currentLap, setCurrentLap } =
+    useFastestLap();
   const { positionChanges, detectChanges } = usePositionChanges();
   const { recentPits, detectPits } = usePitDetection();
   const { retiredDrivers, detectRetirements } = useRetirements();
@@ -100,7 +101,16 @@ export default function LiveDashboard() {
       mounted = false;
       clearInterval(interval);
     };
-  }, [session, enrichDrivers, processLaps, setFastestLapDriver, setCurrentLap, detectChanges, detectPits, detectRetirements]);
+  }, [
+    session,
+    enrichDrivers,
+    processLaps,
+    setFastestLapDriver,
+    setCurrentLap,
+    detectChanges,
+    detectPits,
+    detectRetirements,
+  ]);
 
   const latestWeather = weather.length > 0 ? weather[weather.length - 1] : null;
   const latestPositions = useMemo(() => {
@@ -137,6 +147,7 @@ export default function LiveDashboard() {
       )}
       <div className="flex-1 grid grid-cols-[1fr_2fr] gap-3 min-h-0 max-lg:grid-cols-1">
         <TimingTower
+          session={session}
           drivers={drivers}
           positions={latestPositions}
           intervals={intervals}
@@ -147,7 +158,10 @@ export default function LiveDashboard() {
           retiredDrivers={retiredDrivers}
           driverPenalties={driverPenalties}
         />
-        <RaceControl sessionKey={session?.session_key} />
+        <div className="flex flex-col gap-3">
+          <TrackMap session={session} drivers={drivers} />
+          <RaceControl sessionKey={session?.session_key} />
+        </div>
       </div>
       <TeamRadio sessionKey={session?.session_key} drivers={driverNameMap} />
     </div>

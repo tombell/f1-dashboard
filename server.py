@@ -12,7 +12,7 @@ import sys
 import subprocess
 
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
-API_TARGET = "http://localhost:8000"
+API_TARGET = os.environ.get("OPENF1_API_TARGET", "http://localhost:8000")
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist")
 
 
@@ -48,30 +48,50 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "*")
         self.end_headers()
 
-    def _proxy_team_radio(self):
-        """Proxy team radio audio through the SSH tunnel using curl --connect-to."""
+    def do_HEAD(self):
+        if self.path.startswith("/v1/radio-proxy/"):
+            return self._proxy_team_radio(head_only=True)
+        return super().do_HEAD()
+
+    def _proxy_team_radio(self, head_only=False):
+        """Proxy team radio audio through the F1 tunnel.
+
+        Direct CloudFront access often returns 403. Route the request through
+        the Tailscale/socat tunnel while preserving the livetiming.formula1.com
+        host/SNI with curl --connect-to.
+        """
         path = self.path[len("/v1/radio-proxy/"):]
         url = f"https://livetiming.formula1.com/static/{path}"
+        tunnel_addr = os.environ.get("F1_TUNNEL_ADDR", "rpi.solarflare-skink.ts.net:1443")
         cmd = [
-            "curl", "-s",
-            "--connect-to", "livetiming.formula1.com:443:localhost:1443",
+            "curl", "-sS", "--fail", "--location",
+            "--connect-to", f"livetiming.formula1.com:443:{tunnel_addr}",
             url,
         ]
         try:
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            data, err = proc.communicate(timeout=30)
+            if proc.returncode != 0 or not data:
+                self.send_response(502)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+                msg = err.decode(errors="replace").strip().replace('"', "'")
+                self.wfile.write(f'{{"error": "Radio proxy failed via {tunnel_addr}: {msg}"}}'.encode())
+                return
+
             self.send_response(200)
             self.send_header("Content-Type", "audio/mpeg")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Accept-Ranges", "bytes")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
-            while True:
-                chunk = proc.stdout.read(65536)
-                if not chunk:
-                    break
-                self.wfile.write(chunk)
-            proc.wait()
+            if not head_only:
+                self.wfile.write(data)
         except Exception as e:
             self.send_response(502)
             self.send_header("Content-Type", "application/json")
+            self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(f'{{"error": "Radio proxy failed: {str(e)}"}}'.encode())
 
@@ -113,10 +133,14 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                 return
 
     def log_message(self, format, *args):
-        method, path, code = args[0], args[1], args[2]
-        if path.startswith("/v1/") or path.startswith("/assets/"):
+        if len(args) >= 2:
+            path = args[1]
+            if isinstance(path, str) and (path.startswith("/v1/") or path.startswith("/assets/")):
+                return
+        try:
+            super().log_message(format, *args)
+        except Exception:
             return
-        print(f"[{self.address_string()}] {method} {path} {code}")
 
 
 if __name__ == "__main__":

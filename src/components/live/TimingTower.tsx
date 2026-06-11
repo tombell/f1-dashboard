@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 
-import type { Driver, Position, Interval } from "@/types/api";
+import type { Session, Driver, Position, Interval } from "@/types/api";
 
 interface TimingTowerProps {
+  session: Session | null;
   drivers: Driver[];
   positions: Map<number, Position>;
   intervals: Interval[];
@@ -48,6 +49,7 @@ function teamColor(teamName: string): string {
 }
 
 export default function TimingTower({
+  session,
   drivers,
   positions,
   intervals,
@@ -83,6 +85,14 @@ export default function TimingTower({
     });
     return [...active, ...retired];
   }, [drivers, positions, retiredDrivers]);
+
+  if (!session) {
+    return (
+      <div className="bg-f1-bg2 border border-f1-border rounded-lg flex items-center justify-center text-f1-dim text-sm">
+        No active race weekend
+      </div>
+    );
+  }
 
   if (!drivers.length) {
     return (
