@@ -54,20 +54,10 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
         return super().do_HEAD()
 
     def _proxy_team_radio(self, head_only=False):
-        """Proxy team radio audio through the F1 tunnel.
-
-        Direct CloudFront access often returns 403. Route the request through
-        the Tailscale/socat tunnel while preserving the livetiming.formula1.com
-        host/SNI with curl --connect-to.
-        """
+        """Proxy team radio audio directly from F1 live timing."""
         path = self.path[len("/v1/radio-proxy/"):]
         url = f"https://livetiming.formula1.com/static/{path}"
-        tunnel_addr = os.environ.get("F1_TUNNEL_ADDR", "rpi.solarflare-skink.ts.net:1443")
-        cmd = [
-            "curl", "-sS", "--fail", "--location",
-            "--connect-to", f"livetiming.formula1.com:443:{tunnel_addr}",
-            url,
-        ]
+        cmd = ["curl", "-sS", "--fail", "--location", url]
         try:
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             data, err = proc.communicate(timeout=30)
@@ -77,7 +67,7 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.end_headers()
                 msg = err.decode(errors="replace").strip().replace('"', "'")
-                self.wfile.write(f'{{"error": "Radio proxy failed via {tunnel_addr}: {msg}"}}'.encode())
+                self.wfile.write(f'{{"error": "Radio proxy failed: {msg}"}}'.encode())
                 return
 
             self.send_response(200)

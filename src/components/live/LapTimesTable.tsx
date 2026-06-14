@@ -20,26 +20,34 @@ export default function LapTimesTable({ laps, driverMap, collapsed, onToggle }: 
       driverLaps.get(lap.driver_number)!.push(lap);
     }
 
-    return [...driverLaps.entries()].map(([dn, dl]) => {
-      const cleanLaps = dl.filter((l) => l.lap_duration != null && !l.is_pit_out_lap);
-      const fastest = cleanLaps.reduce(
-        (best, l) => (l.lap_duration != null && l.lap_duration < best ? l.lap_duration : best),
-        Infinity,
-      );
-      const avg =
-        cleanLaps.length > 0
-          ? cleanLaps.reduce((s, l) => s + (l.lap_duration ?? 0), 0) / cleanLaps.length
-          : 0;
-      const topSpeed = Math.max(...dl.map((l) => l.st_speed_trap ?? 0), 0);
-      return {
-        driver_number: dn,
-        fastest: fastest !== Infinity ? fastest : null,
-        average: avg || null,
-        cleanCount: cleanLaps.length,
-        totalLaps: dl.length,
-        topSpeed: topSpeed > 0 ? topSpeed : null,
-      };
-    });
+    return [...driverLaps.entries()]
+      .map(([dn, dl]) => {
+        const cleanLaps = dl.filter((l) => l.lap_duration != null && !l.is_pit_out_lap);
+        const fastest = cleanLaps.reduce(
+          (best, l) => (l.lap_duration != null && l.lap_duration < best ? l.lap_duration : best),
+          Infinity,
+        );
+        const avg =
+          cleanLaps.length > 0
+            ? cleanLaps.reduce((s, l) => s + (l.lap_duration ?? 0), 0) / cleanLaps.length
+            : 0;
+        const topSpeed = Math.max(...dl.map((l) => l.st_speed_trap ?? 0), 0);
+        return {
+          driver_number: dn,
+          fastest: fastest !== Infinity ? fastest : null,
+          average: avg || null,
+          cleanCount: cleanLaps.length,
+          totalLaps: dl.length,
+          topSpeed: topSpeed > 0 ? topSpeed : null,
+        };
+      })
+      .sort((a, b) => {
+        // Fastest lap ascending — nulls (no clean lap) at the bottom
+        if (a.fastest === null && b.fastest === null) return 0;
+        if (a.fastest === null) return 1;
+        if (b.fastest === null) return -1;
+        return a.fastest - b.fastest;
+      });
   }, [laps]);
 
   if (laps.length === 0) return null;

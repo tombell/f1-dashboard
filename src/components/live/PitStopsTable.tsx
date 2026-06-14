@@ -27,8 +27,8 @@ export default function PitStopsTable({ pits, driverMap, collapsed, onToggle }: 
         </thead>
         <tbody>
           {pits
+            .toSorted((a, b) => (a.lap_number ?? 0) - (b.lap_number ?? 0))
             .slice(-50)
-            .toReversed()
             .map((p) => (
               <tr
                 key={`${p.driver_number}_${p.lap_number}_${p.pit_duration}`}

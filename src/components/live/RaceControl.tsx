@@ -53,7 +53,7 @@ export default function RaceControl({ sessionKey }: RaceControlProps) {
 
   if (!sessionKey) {
     return (
-      <div className="bg-f1-bg2 border border-f1-border rounded-lg flex items-center justify-center text-f1-dim text-sm">
+      <div className="bg-f1-bg2 border border-f1-border rounded-lg flex-1 flex items-center justify-center text-f1-dim text-sm">
         No active race weekend
       </div>
     );

@@ -9,9 +9,11 @@ import {
   getPitStops,
   getStints,
   getRaceControl,
+  getLaps,
 } from "@/api/openf1";
 import RaceControl from "@/components/live/RaceControl";
 import TeamRadio from "@/components/live/TeamRadio";
+import PracticeTiming from "@/components/live/PracticeTiming";
 import TimingTower from "@/components/live/TimingTower";
 import TrackClock from "@/components/live/TrackClock";
 import TrackMap from "@/components/live/TrackMap";
@@ -25,7 +27,7 @@ import { usePitDetection } from "@/hooks/usePitDetection";
 import { usePositionChanges } from "@/hooks/usePositionChanges";
 import { useRetirements } from "@/hooks/useRetirements";
 import { useTyres } from "@/hooks/useTyres";
-import type { Driver, Position, Interval, WeatherReading, Stint } from "@/types/api";
+import type { Driver, Position, Interval, WeatherReading, Stint, Lap } from "@/types/api";
 
 export default function LiveDashboard() {
   const [searchParams] = useSearchParams();
@@ -46,6 +48,7 @@ export default function LiveDashboard() {
   const { retiredDrivers, detectRetirements } = useRetirements();
   const [rc, setRc] = useState<any[]>([]);
   const [stints, setStints] = useState<Stint[]>([]);
+  const [laps, setLaps] = useState<Lap[]>([]);
   const currentTyres = useTyres(stints, currentLap);
   const driverPenalties = usePenalties(rc);
 
@@ -80,9 +83,9 @@ export default function LiveDashboard() {
         setError(null);
 
         // Process derived state
-        const { fastestLapDriver: flDriver, currentLap: cl } = processLaps(
-          await (await fetch(`/v1/laps?session_key=${sk}&lap_number>=0`)).json(),
-        );
+        const lapsData: Lap[] = await (await fetch(`/v1/laps?session_key=${sk}&lap_number>=0`)).json();
+        const { fastestLapDriver: flDriver, currentLap: cl } = processLaps(lapsData);
+        setLaps(lapsData);
         if (flDriver !== null) setFastestLapDriver(flDriver);
         if (cl > 0) setCurrentLap(cl);
 
@@ -129,6 +132,29 @@ export default function LiveDashboard() {
     return map;
   }, [drivers]);
 
+  const driverLaps = useMemo(() => {
+    const map = new Map<number, { laps: number; bestLap: number | null }>();
+    const byDriver = new Map<number, Lap[]>();
+    for (const lap of laps) {
+      if (!byDriver.has(lap.driver_number)) {
+        byDriver.set(lap.driver_number, []);
+      }
+      byDriver.get(lap.driver_number)!.push(lap);
+    }
+    for (const [dn, dl] of byDriver) {
+      const clean = dl.filter((l) => l.lap_duration != null && !l.is_pit_out_lap);
+      const best = clean.reduce(
+        (b, l) => (l.lap_duration != null && l.lap_duration < b ? l.lap_duration : b),
+        Infinity,
+      );
+      map.set(dn, {
+        laps: clean.length,
+        bestLap: best !== Infinity ? best : null,
+      });
+    }
+    return map;
+  }, [laps]);
+
   const handleRefresh = useCallback(() => setError(null), []);
 
   const displayError = sessionError || error;
@@ -157,13 +183,17 @@ export default function LiveDashboard() {
           currentTyres={currentTyres}
           retiredDrivers={retiredDrivers}
           driverPenalties={driverPenalties}
+          driverLaps={driverLaps}
         />
         <div className="flex flex-col gap-3">
           <TrackMap session={session} drivers={drivers} />
           <RaceControl sessionKey={session?.session_key} />
+          <TeamRadio sessionKey={session?.session_key} drivers={driverNameMap} />
         </div>
       </div>
-      <TeamRadio sessionKey={session?.session_key} drivers={driverNameMap} />
+      {session?.session_type === "Practice" && (
+        <PracticeTiming sessionKey={session.session_key} />
+      )}
     </div>
   );
 }

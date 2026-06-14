@@ -344,7 +344,7 @@ export default function MeetingDetail({
             </div>
           )}
 
-          {!loading && selectedSession && !sessionHasResults && !resultsLoading && (
+          {!loading && selectedSession && !sessionHasResults && !resultsLoading && selectedSession.session_type !== 'Practice' && (
             <div className="bg-f1-bg2 border border-f1-border rounded-lg py-8 text-center text-f1-dim text-sm">
               <span className="text-4xl mb-3 opacity-40" aria-hidden="true">
                 📭

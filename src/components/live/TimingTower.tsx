@@ -13,6 +13,7 @@ interface TimingTowerProps {
   currentTyres: Map<number, string>;
   retiredDrivers: Set<number>;
   driverPenalties: Map<number, string[]>;
+  driverLaps: Map<number, { laps: number; bestLap: number | null }>;
 }
 
 const TYRE_COLORS: Record<string, string> = {
@@ -59,6 +60,7 @@ export default function TimingTower({
   currentTyres,
   retiredDrivers,
   driverPenalties,
+  driverLaps,
 }: TimingTowerProps) {
   // Build a map of driver_number -> last interval
   const intervalMap = useMemo(() => {
@@ -69,26 +71,72 @@ export default function TimingTower({
     return map;
   }, [intervals]);
 
+  const isPractice =
+    session?.session_type === "Practice" && driverLaps.size > 0;
+
+  // Practice: fastest lap for gap calculation
+  const fastestPracticeLap = useMemo(() => {
+    if (!isPractice) return null;
+    let best = Infinity;
+    for (const [, info] of driverLaps) {
+      if (info.bestLap != null && info.bestLap < best) best = info.bestLap;
+    }
+    return best !== Infinity ? best : null;
+  }, [isPractice, driverLaps]);
+
+  // Convert gap_to_leader to a numeric sort key for when position data is unavailable
+  function gapSortKey(dn: number): number {
+    const iv = intervalMap.get(dn);
+    const gtl = iv?.gap_to_leader;
+    if (gtl == null) return 999;
+    if (typeof gtl === "number") return gtl;
+    if (typeof gtl === "string") {
+      const m = gtl.match(/(\d+)/);
+      const laps = m ? parseInt(m[1]) : 999;
+      return 999 + laps * 100; // +1 LAP → 1099, +2 LAP → 1199
+    }
+    return 999;
+  }
+
   // Sort drivers by position, retired drivers at the bottom
   const sorted = useMemo(() => {
     const active = [...drivers].filter((d) => !retiredDrivers.has(d.driver_number));
     const retired = [...drivers].filter((d) => retiredDrivers.has(d.driver_number));
-    active.sort((a, b) => {
-      const pa = positions.get(a.driver_number)?.position ?? 99;
-      const pb = positions.get(b.driver_number)?.position ?? 99;
-      return pa - pb;
-    });
+    if (isPractice) {
+      active.sort((a, b) => {
+        const la = driverLaps.get(a.driver_number);
+        const lb = driverLaps.get(b.driver_number);
+        const ta = la?.bestLap ?? 999;
+        const tb = lb?.bestLap ?? 999;
+        return ta - tb;
+      });
+    } else {
+      active.sort((a, b) => {
+        const pa = positions.get(a.driver_number)?.position;
+        const pb = positions.get(b.driver_number)?.position;
+        // If both have position data, sort by position (normal behaviour)
+        if (pa != null && pb != null) return pa - pb;
+        // Driver with position data goes before one without
+        if (pa != null) return -1;
+        if (pb != null) return 1;
+        // Fall back to gap_to_leader from intervals
+        return gapSortKey(a.driver_number) - gapSortKey(b.driver_number);
+      });
+    }
     retired.sort((a, b) => {
-      const pa = positions.get(a.driver_number)?.position ?? 99;
-      const pb = positions.get(b.driver_number)?.position ?? 99;
-      return pa - pb;
+      const pa = positions.get(a.driver_number)?.position;
+      const pb = positions.get(b.driver_number)?.position;
+      if (pa != null && pb != null) return pa - pb;
+      if (pa != null) return -1;
+      if (pb != null) return 1;
+      return gapSortKey(a.driver_number) - gapSortKey(b.driver_number);
     });
     return [...active, ...retired];
-  }, [drivers, positions, retiredDrivers]);
+  }, [drivers, positions, retiredDrivers, isPractice, driverLaps, intervalMap]);
 
   if (!session) {
     return (
-      <div className="bg-f1-bg2 border border-f1-border rounded-lg flex items-center justify-center text-f1-dim text-sm">
+      <div className="bg-f1-bg2 border border-f1-border rounded-lg h-full flex items-center justify-center text-f1-dim text-sm">
         No active race weekend
       </div>
     );
@@ -106,11 +154,23 @@ export default function TimingTower({
     <div className="bg-f1-bg2 border border-f1-border rounded-lg flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex px-3 py-2 bg-f1-bg3 text-[11px] text-f1-dim uppercase tracking-wider">
-        <span className="w-[30px]">#</span>
-        <span className="flex-1">Driver</span>
-        <span className="w-[20px] text-center">⚡</span>
-        <span className="w-[50px] text-right">Gap</span>
-        <span className="w-[50px] text-right">Int</span>
+        {isPractice ? (
+          <>
+            <span className="w-[30px]">Laps</span>
+            <span className="flex-1">Driver</span>
+            <span className="w-[20px] text-center">⚡</span>
+            <span className="w-[80px] text-right">Best</span>
+            <span className="w-[50px] text-right">Gap</span>
+          </>
+        ) : (
+          <>
+            <span className="w-[30px]">#</span>
+            <span className="flex-1">Driver</span>
+            <span className="w-[20px] text-center">⚡</span>
+            <span className="w-[50px] text-right">Gap</span>
+            <span className="w-[50px] text-right">Int</span>
+          </>
+        )}
       </div>
 
       {/* Driver rows */}
@@ -131,78 +191,164 @@ export default function TimingTower({
                 borderLeft: `3px solid ${color}` /* eslint-disable-line react-perf/jsx-no-new-object-as-prop */,
               }}
             >
-              <span className="w-[30px] font-bold text-f1-bright">{pos?.position ?? "—"}</span>
-              <span className="flex-1 flex items-center gap-2">
-                <span className="font-semibold text-f1-bright">{driver.name_acronym}</span>
-                {recentPits.has(driver.driver_number) && (
-                  <span className="text-[10px] bg-f1-blue/20 text-f1-blue font-bold px-1 rounded leading-none">
-                    PIT
+              {isPractice ? (
+                <>
+                  <span className="w-[30px] font-bold text-f1-bright tabular-nums">
+                    {(() => {
+                      const dl = driverLaps.get(driver.driver_number);
+                      return dl?.laps ?? "—";
+                    })()}
                   </span>
-                )}
-                {(() => {
-                  const compound = currentTyres.get(driver.driver_number);
-                  if (!compound) return null;
-                  const tyreColor = TYRE_COLORS[compound.toUpperCase()] || "bg-gray-500";
-                  const label = TYRE_LABELS[compound.toUpperCase()] || compound[0];
-                  return (
-                    <span
-                      className={`text-[10px] font-bold px-1 rounded leading-none ${tyreColor}`}
-                    >
-                      {label}
-                    </span>
-                  );
-                })()}
-                {retiredDrivers.has(driver.driver_number) && (
-                  <span className="text-[10px] bg-red-600/30 text-red-400 font-bold px-1.5 rounded leading-none">
-                    OUT
-                  </span>
-                )}
-                {(() => {
-                  const pens = driverPenalties.get(driver.driver_number);
-                  return (
-                    <>
-                      {pens?.includes("INVESTIGATION") && (
+                  <span className="flex-1 flex items-center gap-2">
+                    <span className="font-semibold text-f1-bright">{driver.name_acronym}</span>
+                    {recentPits.has(driver.driver_number) && (
+                      <span className="text-[10px] bg-f1-blue/20 text-f1-blue font-bold px-1 rounded leading-none">
+                        PIT
+                      </span>
+                    )}
+                    {(() => {
+                      const compound = currentTyres.get(driver.driver_number);
+                      if (!compound) return null;
+                      const tyreColor = TYRE_COLORS[compound.toUpperCase()] || "bg-gray-500";
+                      const label = TYRE_LABELS[compound.toUpperCase()] || compound[0];
+                      return (
                         <span
-                          className="text-[10px] bg-yellow-600 text-white font-bold px-1.5 rounded leading-none"
-                          title="Under investigation"
+                          className={`text-[10px] font-bold px-1 rounded leading-none ${tyreColor}`}
                         >
-                          INV
+                          {label}
                         </span>
-                      )}
-                      {pens?.includes("PENALTY") && (
-                        <span
-                          className="text-[10px] bg-orange-600 text-white font-bold px-1.5 rounded leading-none"
-                          title="Penalty applied"
-                        >
-                          PEN
-                        </span>
-                      )}
-                    </>
-                  );
-                })()}
-                <span className="text-f1-dim text-[11px]">{driver.team_name}</span>
-              </span>
-              <span className="w-[20px] text-center">
-                {fastestLapDriver === driver.driver_number && (
-                  <span className="text-[11px]" title="Fastest lap">
-                    ⚡
+                      );
+                    })()}
+                    {retiredDrivers.has(driver.driver_number) && (
+                      <span className="text-[10px] bg-red-600/30 text-red-400 font-bold px-1.5 rounded leading-none">
+                        OUT
+                      </span>
+                    )}
+                    {(() => {
+                      const pens = driverPenalties.get(driver.driver_number);
+                      return (
+                        <>
+                          {pens?.includes("INVESTIGATION") && (
+                            <span
+                              className="text-[10px] bg-yellow-600 text-white font-bold px-1.5 rounded leading-none"
+                              title="Under investigation"
+                            >
+                              INV
+                            </span>
+                          )}
+                          {pens?.includes("PENALTY") && (
+                            <span
+                              className="text-[10px] bg-orange-600 text-white font-bold px-1.5 rounded leading-none"
+                              title="Penalty applied"
+                            >
+                              PEN
+                            </span>
+                          )}
+                        </>
+                      );
+                    })()}
+                    <span className="text-f1-dim text-[11px]">{driver.team_name}</span>
                   </span>
-                )}
-              </span>
-              <span className="w-[50px] text-right text-f1-orange">
-                {iv?.gap_to_leader != null
-                  ? iv.gap_to_leader > 0
-                    ? `+${iv.gap_to_leader.toFixed(1)}`
-                    : "—"
-                  : "—"}
-              </span>
-              <span className="w-[50px] text-right text-f1-dim">
-                {iv?.interval != null
-                  ? iv.interval > 0
-                    ? `+${iv.interval.toFixed(1)}`
-                    : "—"
-                  : "—"}
-              </span>
+                  <span className="w-[20px] text-center">
+                    {fastestLapDriver === driver.driver_number && (
+                      <span className="text-[11px]" title="Fastest lap">
+                        ⚡
+                      </span>
+                    )}
+                  </span>
+                  <span className="w-[80px] text-right text-f1-green tabular-nums font-medium">
+                    {(() => {
+                      const dl = driverLaps.get(driver.driver_number);
+                      return dl?.bestLap != null ? `${dl.bestLap.toFixed(3)}` : "—";
+                    })()}
+                  </span>
+                  <span className="w-[50px] text-right text-f1-orange tabular-nums">
+                    {(() => {
+                      const dl = driverLaps.get(driver.driver_number);
+                      if (dl?.bestLap != null && fastestPracticeLap != null) {
+                        const gap = dl.bestLap - fastestPracticeLap;
+                        return gap > 0 ? `+${gap.toFixed(3)}` : "—";
+                      }
+                      return "—";
+                    })()}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="w-[30px] font-bold text-f1-bright">{pos?.position ?? "—"}</span>
+                  <span className="flex-1 flex items-center gap-2">
+                    <span className="font-semibold text-f1-bright">{driver.name_acronym}</span>
+                    {recentPits.has(driver.driver_number) && (
+                      <span className="text-[10px] bg-f1-blue/20 text-f1-blue font-bold px-1 rounded leading-none">
+                        PIT
+                      </span>
+                    )}
+                    {(() => {
+                      const compound = currentTyres.get(driver.driver_number);
+                      if (!compound) return null;
+                      const tyreColor = TYRE_COLORS[compound.toUpperCase()] || "bg-gray-500";
+                      const label = TYRE_LABELS[compound.toUpperCase()] || compound[0];
+                      return (
+                        <span
+                          className={`text-[10px] font-bold px-1 rounded leading-none ${tyreColor}`}
+                        >
+                          {label}
+                        </span>
+                      );
+                    })()}
+                    {retiredDrivers.has(driver.driver_number) && (
+                      <span className="text-[10px] bg-red-600/30 text-red-400 font-bold px-1.5 rounded leading-none">
+                        OUT
+                      </span>
+                    )}
+                    {(() => {
+                      const pens = driverPenalties.get(driver.driver_number);
+                      return (
+                        <>
+                          {pens?.includes("INVESTIGATION") && (
+                            <span
+                              className="text-[10px] bg-yellow-600 text-white font-bold px-1.5 rounded leading-none"
+                              title="Under investigation"
+                            >
+                              INV
+                            </span>
+                          )}
+                          {pens?.includes("PENALTY") && (
+                            <span
+                              className="text-[10px] bg-orange-600 text-white font-bold px-1.5 rounded leading-none"
+                              title="Penalty applied"
+                            >
+                              PEN
+                            </span>
+                          )}
+                        </>
+                      );
+                    })()}
+                    <span className="text-f1-dim text-[11px]">{driver.team_name}</span>
+                  </span>
+                  <span className="w-[20px] text-center">
+                    {fastestLapDriver === driver.driver_number && (
+                      <span className="text-[11px]" title="Fastest lap">
+                        ⚡
+                      </span>
+                    )}
+                  </span>
+                  <span className="w-[50px] text-right text-f1-orange">
+                    {iv?.gap_to_leader != null
+                      ? iv.gap_to_leader > 0
+                        ? `+${iv.gap_to_leader.toFixed(1)}`
+                        : "—"
+                      : "—"}
+                  </span>
+                  <span className="w-[50px] text-right text-f1-dim">
+                    {iv?.interval != null
+                      ? iv.interval > 0
+                        ? `+${iv.interval.toFixed(1)}`
+                        : "—"
+                      : "—"}
+                  </span>
+                </>
+              )}
             </div>
           );
         })}

@@ -31,7 +31,7 @@ export default function TyreStints({ stints, laps, driverMap, collapsed, onToggl
         {(() => {
           const driverLapTotals = [...stintsByDriver.entries()].map(([dn, driverStints]) => ({
             dn,
-            stints: [...driverStints].toSorted((a, b) => a.stint_number - b.stint_number),
+            stints: [...driverStints].toSorted((a, b) => a.lap_start - b.lap_start),
             total: driverStints.reduce((s, st) => s + (st.lap_end - st.lap_start + 1), 0),
           }));
           const maxTotal = Math.max(...driverLapTotals.map((d) => d.total), 1);

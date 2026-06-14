@@ -133,7 +133,9 @@ export default function LiveDataSections({ sessionKey, meetingKey, sessionName }
       <LapTimesTable laps={laps} driverMap={driverMap} collapsed={collapsed} onToggle={handleToggle} />
       <PitStopsTable pits={pits} driverMap={driverMap} collapsed={collapsed} onToggle={handleToggle} />
       <TyreStints stints={stints} laps={laps} driverMap={driverMap} collapsed={collapsed} onToggle={handleToggle} isRace={isRace} />
-      <PositionChangesTable positions={positions} driverMap={driverMap} collapsed={collapsed} onToggle={handleToggle} />
+      {!sessionName?.startsWith('Practice') && (
+        <PositionChangesTable positions={positions} driverMap={driverMap} collapsed={collapsed} onToggle={handleToggle} />
+      )}
 
       {hasWeather && (
         <LiveSection title="🌤️ Weather History" sectionKey="weather" collapsed={collapsed} onToggle={handleToggle}>
