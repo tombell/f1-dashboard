@@ -35,10 +35,10 @@ export default function LiveDataSections({ sessionKey, meetingKey, sessionName }
   const [positions, setPositions] = useState<Position[]>([]);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [driverMap, setDriverMap] = useState<
-    Map<number, { name_acronym: string; team_name: string; team_colour: string }>
+    Map<number, { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }>
   >(new Map());
   const driverFallbackCache = useRef<
-    Map<number, Map<number, { name_acronym: string; team_name: string; team_colour: string }>>
+    Map<number, Map<number, { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }>>
   >(new Map());
 
   const handleToggle = useCallback((k: string) => {
@@ -69,10 +69,14 @@ export default function LiveDataSections({ sessionKey, meetingKey, sessionName }
         setPositions(pos);
 
         // Build driver name map
-        const nameMap = new Map<number, { name_acronym: string; team_name: string; team_colour: string }>();
+        const nameMap = new Map<
+          number,
+          { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }
+        >();
         for (const d of drs) {
           if (!nameMap.has(d.driver_number)) {
             nameMap.set(d.driver_number, {
+              broadcast_name: d.broadcast_name ?? d.full_name ?? d.name_acronym,
               name_acronym: d.name_acronym,
               team_name: d.team_name,
               team_colour: d.team_colour,
@@ -90,6 +94,7 @@ export default function LiveDataSections({ sessionKey, meetingKey, sessionName }
               for (const d of meetingDrivers) {
                 if (!meetingCache.has(d.driver_number)) {
                   meetingCache.set(d.driver_number, {
+                    broadcast_name: d.broadcast_name ?? d.full_name ?? d.name_acronym,
                     name_acronym: d.name_acronym,
                     team_name: d.team_name,
                     team_colour: d.team_colour,

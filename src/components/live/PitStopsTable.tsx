@@ -4,7 +4,7 @@ import LiveSection from "./LiveSection";
 
 interface PitStopsTableProps {
   pits: PitStop[];
-  driverMap: Map<number, { name_acronym: string; team_name: string; team_colour: string }>;
+  driverMap: Map<number, { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }>;
   collapsed: Record<string, boolean>;
   onToggle: (key: string) => void;
 }
