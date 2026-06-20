@@ -10,10 +10,6 @@ interface SessionResultsProps {
   sessionName: string;
 }
 
-function dnShort(r: SessionResult): string {
-  return r.name_acronym || r.broadcast_name?.split(" ").pop() || `#${r.driver_number}`;
-}
-
 function driverName(r: SessionResult): string {
   return r.broadcast_name || r.full_name || `Driver #${r.driver_number}`;
 }
@@ -101,6 +97,7 @@ export default function SessionResults({
         ) : (
           <div className="w-full text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center bg-transparent border-t-0 border-x-0">
             <span>{sessionName} Results</span>
+            <span className="text-f1-dim text-[11px]">{results.length} drivers</span>
           </div>
         )}
 
@@ -246,15 +243,6 @@ function QualifyingTable({
   segLabels: string[];
   segFastest: Record<number, { time: number; driver_number: number }>;
 }) {
-  // Build header label with fastest-per-segment info
-  const flHeader = [0, 1, 2]
-    .filter((i) => segFastest[i])
-    .map((i) => {
-      const driver = results.find((r) => r.driver_number === segFastest[i].driver_number);
-      return `🏁 ${driver ? dnShort(driver) : `#${segFastest[i].driver_number}`} — ${segFastest[i].time.toFixed(3)}s`;
-    })
-    .join(" · ");
-
   return (
     <table className="w-full border-collapse">
       <thead>
@@ -263,7 +251,7 @@ function QualifyingTable({
             Pos
           </th>
           <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
-            Driver {flHeader && <span className="font-normal text-[11px]">· {flHeader}</span>}
+            Driver
           </th>
           <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
             {segLabels[0]}
