@@ -136,9 +136,9 @@ export interface PitStop {
   driver_number: number;
   lap_number: number;
   pit_duration: number | null;
-  lane_time: number | null;
-  stop_time: number | null;
-  tyre_change: boolean;
+  lane_duration: number | null;
+  stop_duration: number | null;
+  tyre_change?: boolean;
   date: string;
 }
 

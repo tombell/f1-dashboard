@@ -29,7 +29,6 @@ export default function PitStopsTable({
             <th className="px-3 py-2 text-left">Driver</th>
             <th className="px-3 py-2 text-left">Lap</th>
             <th className="px-3 py-2 text-left">Stop</th>
-            <th className="px-3 py-2 text-left">Total</th>
             <th className="px-3 py-2 text-left">Lane</th>
             <th className="px-3 py-2 text-left">Type</th>
           </tr>
@@ -48,19 +47,16 @@ export default function PitStopsTable({
                 </td>
                 <td className="px-3 py-2 text-xs">L{p.lap_number}</td>
                 <td className="px-3 py-2 text-xs text-f1-dim">
-                  {p.pit_duration != null ? `${p.pit_duration.toFixed(1)}s` : "-"}
+                  {p.stop_duration != null ? `${p.stop_duration.toFixed(1)}s` : "-"}
                 </td>
                 <td className="px-3 py-2 text-xs text-f1-dim">
-                  {p.stop_time != null ? `${p.stop_time.toFixed(1)}s` : "-"}
-                </td>
-                <td className="px-3 py-2 text-xs text-f1-dim">
-                  {p.lane_time != null ? `${p.lane_time.toFixed(1)}s` : "-"}
+                  {p.lane_duration != null ? `${p.lane_duration.toFixed(1)}s` : "-"}
                 </td>
                 <td className="px-3 py-2 text-xs">
-                  {p.tyre_change ? (
+                  {p.tyre_change || p.stop_duration != null ? (
                     <span className="text-f1-yellow">Tyre change</span>
                   ) : (
-                    <span className="text-f1-dim">—</span>
+                    <span className="text-f1-dim">Lane only</span>
                   )}
                 </td>
               </tr>
