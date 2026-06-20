@@ -97,11 +97,9 @@ export default function TyreStints({
                                     ? "0 4px 4px 0"
                                     : undefined,
                           }}
-                          className="flex items-center justify-center text-[10px] font-bold text-black/70 border-r border-black/10 last:border-r-0 shrink-0"
+                          className="border-r border-black/10 last:border-r-0 shrink-0"
                           title={`${st.compound} L${st.lap_start}–${st.lap_end}`}
-                        >
-                          {pct > 12 ? st.compound : ""}
-                        </div>
+                        />
                       );
                     })}
                   </div>
