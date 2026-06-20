@@ -130,7 +130,19 @@ export default function HistoricalBrowser() {
     <div className="flex flex-col gap-3 p-4 h-full min-h-screen">
       <Header session={session} onRefresh={handleRefresh} activeView="historical" />
 
-      <div className="bg-f1-bg2 border border-f1-border rounded-lg px-5 py-3.5 flex items-center justify-between flex-wrap gap-3">
+      <div className="bg-f1-bg2 border border-f1-border rounded-lg px-5 py-3.5 flex items-center flex-wrap gap-3">
+        <select
+          value={year}
+          onChange={handleYearSelect}
+          className="bg-f1-bg3 border border-f1-border rounded-md px-2.5 py-1.5 text-f1-bright text-xs font-semibold cursor-pointer outline-none focus:border-f1-red transition-colors font-mono"
+        >
+          {years.map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
+        </select>
+
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={handleRacesClick}
@@ -153,18 +165,6 @@ export default function HistoricalBrowser() {
             Standings
           </button>
         </div>
-
-        <select
-          value={year}
-          onChange={handleYearSelect}
-          className="bg-f1-bg3 border border-f1-border rounded-md px-2.5 py-1.5 text-f1-bright text-xs font-semibold cursor-pointer outline-none focus:border-f1-red transition-colors font-mono"
-        >
-          {years.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
       </div>
 
       {loading && <div className="text-center py-8 text-f1-dim text-sm">Loading...</div>}
