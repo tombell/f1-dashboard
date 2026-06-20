@@ -165,6 +165,7 @@ export default function LiveDataSections({
 
   const hasWeather = weather.length > 0;
   const isRace = sessionName === "Race";
+  const showsPositionChanges = sessionName === "Race" || sessionName === "Sprint";
 
   return (
     <div className="flex flex-col gap-3 mt-3">
@@ -190,7 +191,7 @@ export default function LiveDataSections({
         onToggle={handleToggle}
         isRace={isRace}
       />
-      {!sessionName?.startsWith("Practice") && (
+      {showsPositionChanges && (
         <PositionChangesTable
           positions={positions}
           driverMap={driverMap}
