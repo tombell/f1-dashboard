@@ -16,7 +16,8 @@ interface PointsEntry {
   team_colour: string;
   country_code: string;
   points: number;
-  wins: number;
+  raceWins: number;
+  sprintWins: number;
 }
 
 interface DriverInfo {
@@ -37,8 +38,14 @@ function calcPoints(position: number | null): number {
   return base;
 }
 
+type ResultKind = "race" | "sprint";
+
+type StandingResult = SessionResult & {
+  resultKind: ResultKind;
+};
+
 type LoadResult = {
-  results: SessionResult[];
+  results: StandingResult[];
   drivers: Map<number, DriverInfo>;
 } | null;
 
@@ -67,7 +74,13 @@ async function loadMeeting(mk: number): Promise<LoadResult> {
       driverPromises.push(getDrivers(sprintSession.session_key));
     const driverArrays = await Promise.all(driverPromises);
 
-    const allResults: SessionResult[] = [...raceSr, ...sprintSr];
+    const allResults: StandingResult[] = [];
+    for (const result of raceSr) {
+      allResults.push(Object.assign({}, result, { resultKind: "race" as const }));
+    }
+    for (const result of sprintSr) {
+      allResults.push(Object.assign({}, result, { resultKind: "sprint" as const }));
+    }
     const driverMap = new Map<number, DriverInfo>();
 
     for (const drivers of driverArrays) {
@@ -92,13 +105,13 @@ async function loadMeeting(mk: number): Promise<LoadResult> {
 }
 
 export default function StandingsView({ meetings, year: _year }: StandingsViewProps) {
-  const [resultsByMeeting, setResultsByMeeting] = useState<Record<number, SessionResult[]>>({});
+  const [resultsByMeeting, setResultsByMeeting] = useState<Record<number, StandingResult[]>>({});
   const [loading, setLoading] = useState(true);
   const [selectedMeeting, setSelectedMeeting] = useState<number | "all">("all");
   const [driverLookup, setDriverLookup] = useState<Map<number, DriverInfo>>(new Map());
   const dataCache = useRef<{
     key: string;
-    results: Record<number, SessionResult[]>;
+    results: Record<number, StandingResult[]>;
     drivers: Map<number, DriverInfo>;
   } | null>(null);
 
@@ -132,7 +145,7 @@ export default function StandingsView({ meetings, year: _year }: StandingsViewPr
     }
 
     const loadAll = async () => {
-      const results: Record<number, SessionResult[]> = {};
+      const results: Record<number, StandingResult[]> = {};
       const driverCache = new Map<number, DriverInfo>();
 
       // Load meetings in parallel batches
@@ -232,7 +245,10 @@ export default function StandingsView({ meetings, year: _year }: StandingsViewPr
         const existing = driverPoints.get(r.driver_number);
         if (existing) {
           existing.points += r.points ?? pts;
-          if (r.position === 1) existing.wins++;
+          if (r.position === 1) {
+            if (r.resultKind === "sprint") existing.sprintWins++;
+            else existing.raceWins++;
+          }
         } else {
           const di = driverLookup.get(r.driver_number);
           driverPoints.set(r.driver_number, {
@@ -243,7 +259,8 @@ export default function StandingsView({ meetings, year: _year }: StandingsViewPr
             team_colour: di?.team_colour ?? "",
             country_code: di?.country_code ?? "",
             points: r.points ?? pts,
-            wins: r.position === 1 ? 1 : 0,
+            raceWins: r.position === 1 && r.resultKind === "race" ? 1 : 0,
+            sprintWins: r.position === 1 && r.resultKind === "sprint" ? 1 : 0,
           });
         }
       }
@@ -263,7 +280,10 @@ export default function StandingsView({ meetings, year: _year }: StandingsViewPr
           const pts = r.points ?? calcPoints(r.position);
           if (existing) {
             existing.points += pts;
-            if (r.position === 1) existing.wins++;
+            if (r.position === 1) {
+              if (r.resultKind === "sprint") existing.sprintWins++;
+              else existing.raceWins++;
+            }
           } else {
             const di = driverLookup.get(r.driver_number);
             driverPoints.set(r.driver_number, {
@@ -274,7 +294,8 @@ export default function StandingsView({ meetings, year: _year }: StandingsViewPr
               team_colour: di?.team_colour ?? "",
               country_code: di?.country_code ?? "",
               points: pts,
-              wins: r.position === 1 ? 1 : 0,
+              raceWins: r.position === 1 && r.resultKind === "race" ? 1 : 0,
+              sprintWins: r.position === 1 && r.resultKind === "sprint" ? 1 : 0,
             });
           }
         }
@@ -334,7 +355,14 @@ export default function StandingsView({ meetings, year: _year }: StandingsViewPr
                 style={driverStyle(driver.team_colour)}
               >
                 {driver.team_name}
-                {driver.wins > 0 && <span className="text-f1-yellow ml-2">🏆 {driver.wins}</span>}
+                {driver.raceWins > 0 && (
+                  <span className="text-f1-yellow ml-2">🏆 Race {driver.raceWins}</span>
+                )}
+                {driver.sprintWins > 0 && (
+                  <span className="text-f1-yellow ml-2">
+                    {driver.raceWins > 0 ? "· " : ""}Sprint {driver.sprintWins}
+                  </span>
+                )}
               </div>
             </div>
             <div className="text-right">
