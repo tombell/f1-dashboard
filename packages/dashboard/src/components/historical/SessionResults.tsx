@@ -101,7 +101,6 @@ export default function SessionResults({
         ) : (
           <div className="w-full text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center bg-transparent border-t-0 border-x-0">
             <span>{sessionName} Results</span>
-            <span className="text-f1-dim text-[11px]">{results.length} drivers</span>
           </div>
         )}
 
