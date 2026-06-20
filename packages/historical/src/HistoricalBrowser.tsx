@@ -126,7 +126,7 @@ export default function HistoricalBrowser() {
 
   return (
     <div className="flex flex-col gap-3 p-4 h-full min-h-screen">
-      <Header session={session} onRefresh={handleRefresh} />
+      <Header session={session} onRefresh={handleRefresh} activeView="historical" />
 
       <div className="bg-f1-bg2 border border-f1-border rounded-lg px-5 py-3.5 flex items-center justify-between flex-wrap gap-3">
         <div className="flex gap-2 flex-wrap">

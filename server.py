@@ -11,10 +11,18 @@ import os
 import sys
 import subprocess
 
-PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
-API_TARGET = os.environ.get("OPENF1_API_TARGET", "http://localhost:8000")
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-STATIC_DIR = os.path.join(ROOT_DIR, "packages", "live", "dist")
+APP_NAME = "live"
+PORT = 8080
+
+args = sys.argv[1:]
+if args and args[0] in ("live", "historical"):
+    APP_NAME = args.pop(0)
+if args:
+    PORT = int(args[0])
+
+API_TARGET = os.environ.get("OPENF1_API_TARGET", "http://localhost:8000")
+STATIC_DIR = os.path.join(ROOT_DIR, "packages", APP_NAME, "dist")
 
 
 class DashboardHandler(http.server.SimpleHTTPRequestHandler):
@@ -135,18 +143,16 @@ class DashboardHandler(http.server.SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"🏎️  F1 Dashboard (React SPA) + API Proxy")
+    print(f"🏎️  F1 {APP_NAME.title()} Dashboard (React SPA) + API Proxy")
     print(f"   URL:  http://localhost:{PORT}")
     print(f"   API:  {API_TARGET}")
+    print(f"   App:  {APP_NAME}")
     print(f"   Dir:  {STATIC_DIR}")
-    print()
-    print(f"   Live:     http://localhost:{PORT}/")
-    print(f"   History:  http://localhost:{PORT}/historical")
     print()
 
     if not os.path.isdir(STATIC_DIR):
         print(f"⚠️  Build directory not found: {STATIC_DIR}")
-        print(f"   Run: pnpm build")
+        print(f"   Run: pnpm build:{APP_NAME}")
         sys.exit(1)
 
     server = http.server.HTTPServer(("0.0.0.0", PORT), DashboardHandler)

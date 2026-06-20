@@ -8,6 +8,9 @@
       ],
       "@f1-dashboard/shared/*": [
         "../shared/src/*"
+      ],
+      "@/*": [
+        "./src/*"
       ]
     }
   },

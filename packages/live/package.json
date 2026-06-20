@@ -13,7 +13,6 @@
     "fmt:check": "oxfmt --check src/"
   },
   "dependencies": {
-    "@f1-dashboard/historical": "workspace:*",
     "@f1-dashboard/shared": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

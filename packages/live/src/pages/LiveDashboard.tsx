@@ -169,7 +169,12 @@ export default function LiveDashboard() {
 
   return (
     <div className="flex flex-col gap-3 p-4 h-full min-h-screen">
-      <Header session={session} currentLap={currentLap} onRefresh={handleRefresh} />
+      <Header
+        session={session}
+        currentLap={currentLap}
+        onRefresh={handleRefresh}
+        activeView="live"
+      />
       <div className="flex items-center gap-3 flex-wrap">
         <WeatherBar weather={latestWeather} />
         <TrackClock />

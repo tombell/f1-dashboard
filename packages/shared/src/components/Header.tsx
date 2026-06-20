@@ -1,11 +1,14 @@
 import type { Session } from "@f1-dashboard/shared/types/api";
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 
 interface HeaderProps {
   session: Session | null;
   currentLap?: number;
   onRefresh: () => void;
+  activeView?: "live" | "historical";
+  liveHref?: string;
+  historicalHref?: string;
 }
 
 function formatCountdown(dateStr: string): string {
@@ -23,10 +26,19 @@ function isLive(dateStart: string, dateEnd: string): boolean {
   return now >= new Date(dateStart).getTime() && now <= new Date(dateEnd).getTime();
 }
 
-export default function Header({ session, currentLap, onRefresh }: HeaderProps) {
+export default function Header({
+  session,
+  currentLap,
+  onRefresh,
+  activeView,
+  liveHref = "/",
+  historicalHref = "/historical",
+}: HeaderProps) {
   const location = useLocation();
   const [countdown, setCountdown] = useState("");
-  const isHistorical = location.pathname === "/historical";
+  const isHistorical = activeView
+    ? activeView === "historical"
+    : location.pathname === "/historical";
 
   // Update countdown every second if session is upcoming
   if (session && new Date(session.date_start).getTime() > Date.now()) {
@@ -47,8 +59,8 @@ export default function Header({ session, currentLap, onRefresh }: HeaderProps) 
       </div>
 
       <nav className="flex gap-2 flex-wrap">
-        <Link
-          to="/"
+        <a
+          href={liveHref}
           className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-colors border border-transparent ${
             !isHistorical
               ? "bg-f1-red text-white border-white/20"
@@ -56,9 +68,9 @@ export default function Header({ session, currentLap, onRefresh }: HeaderProps) 
           }`}
         >
           Live
-        </Link>
-        <Link
-          to="/historical"
+        </a>
+        <a
+          href={historicalHref}
           className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-colors border border-transparent ${
             isHistorical
               ? "bg-f1-red text-white border-white/20"
@@ -66,7 +78,7 @@ export default function Header({ session, currentLap, onRefresh }: HeaderProps) 
           }`}
         >
           Historical
-        </Link>
+        </a>
       </nav>
 
       <div className="flex items-center gap-4 text-xs text-f1-dim flex-wrap">

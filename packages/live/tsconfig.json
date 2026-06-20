@@ -11,18 +11,11 @@
       ],
       "@f1-dashboard/shared/*": [
         "../shared/src/*"
-      ],
-      "@f1-dashboard/historical": [
-        "../historical/src/index.ts"
-      ],
-      "@f1-dashboard/historical/*": [
-        "../historical/src/*"
       ]
     }
   },
   "include": [
     "src",
-    "../shared/src",
-    "../historical/src"
+    "../shared/src"
   ]
 }

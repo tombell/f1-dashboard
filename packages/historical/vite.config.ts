@@ -12,12 +12,15 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 5174,
     proxy: {
       "/v1": {
         target: "http://localhost:8000",
         changeOrigin: true,
       },
     },
+  },
+  preview: {
+    port: 4174,
   },
 });
