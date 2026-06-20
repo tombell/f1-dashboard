@@ -166,6 +166,7 @@ export default function LiveDataSections({
   const hasWeather = weather.length > 0;
   const isRace = sessionName === "Race";
   const showsPositionChanges = sessionName === "Race" || sessionName === "Sprint";
+  const driverAcronymMap = new Map([...driverMap.entries()].map(([n, d]) => [n, d.name_acronym]));
 
   return (
     <div className="flex flex-col gap-3 mt-3">
@@ -200,16 +201,23 @@ export default function LiveDataSections({
         />
       )}
 
-      {hasWeather && (
-        <LiveSection
-          title="🌤️ Weather History"
-          sectionKey="weather"
-          collapsed={collapsed}
-          onToggle={handleToggle}
-        >
-          <WeatherChart data={weather} />
-        </LiveSection>
-      )}
+      <div className={hasWeather ? "grid gap-3 lg:grid-cols-4" : ""}>
+        {hasWeather && (
+          <div className="min-w-0 lg:col-span-3">
+            <LiveSection
+              title="🌤️ Weather History"
+              sectionKey="weather"
+              collapsed={collapsed}
+              onToggle={handleToggle}
+            >
+              <WeatherChart data={weather} />
+            </LiveSection>
+          </div>
+        )}
+        <div className="min-w-0 lg:col-span-1">
+          <TeamRadio sessionKey={sessionKey} drivers={driverAcronymMap} />
+        </div>
+      </div>
 
       <LiveSection
         title="🚩 Race Control"
@@ -218,23 +226,6 @@ export default function LiveDataSections({
         onToggle={handleToggle}
       >
         <RaceControl sessionKey={sessionKey} />
-      </LiveSection>
-
-      <LiveSection
-        title="📻 Team Radio"
-        sectionKey="radio"
-        collapsed={collapsed}
-        onToggle={handleToggle}
-      >
-        <TeamRadio
-          sessionKey={sessionKey}
-          drivers={
-            new Map([...driverMap.entries()].map(([n, d]) => [n, d.name_acronym])) as Map<
-              number,
-              string
-            >
-          }
-        />
       </LiveSection>
     </div>
   );
