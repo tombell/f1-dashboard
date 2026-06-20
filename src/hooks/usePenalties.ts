@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+
 import type { RaceControlMessage } from "@/types/api";
 
 const extractDriver = (entry: any): number | null => {
@@ -21,10 +22,7 @@ export function usePenalties(rc: RaceControlMessage[]) {
 
         if (msg.includes("UNDER INVESTIGATION")) {
           invCount.set(dn, (invCount.get(dn) || 0) + 1);
-        } else if (
-          msg.includes("NO FURTHER ACTION") ||
-          msg.includes("NO FURTHER INVESTIGATION")
-        ) {
+        } else if (msg.includes("NO FURTHER ACTION") || msg.includes("NO FURTHER INVESTIGATION")) {
           invCount.set(dn, (invCount.get(dn) || 0) - 1);
         }
 

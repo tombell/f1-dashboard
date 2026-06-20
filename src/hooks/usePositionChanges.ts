@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+
 import type { Position } from "@/types/api";
 
 const CHANGE_CLEAR_MS = 4_000;

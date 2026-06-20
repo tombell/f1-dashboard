@@ -9,16 +9,24 @@ import {
   getPositions,
   getDrivers,
 } from "@/api/openf1";
-import type { Lap, PitStop, Stint, WeatherReading, RaceControlMessage, Position, Driver } from "@/types/api";
+import type {
+  Lap,
+  PitStop,
+  Stint,
+  WeatherReading,
+  RaceControlMessage,
+  Position,
+  Driver,
+} from "@/types/api";
 
-import RaceControl from "./RaceControl";
-import TeamRadio from "./TeamRadio";
 import WeatherChart from "../shared/WeatherChart";
 import LapTimesTable from "./LapTimesTable";
-import PitStopsTable from "./PitStopsTable";
-import TyreStints from "./TyreStints";
-import PositionChangesTable from "./PositionChangesTable";
 import LiveSection from "./LiveSection";
+import PitStopsTable from "./PitStopsTable";
+import PositionChangesTable from "./PositionChangesTable";
+import RaceControl from "./RaceControl";
+import TeamRadio from "./TeamRadio";
+import TyreStints from "./TyreStints";
 
 interface LiveDataSectionsProps {
   sessionKey: number;
@@ -26,7 +34,11 @@ interface LiveDataSectionsProps {
   sessionName?: string;
 }
 
-export default function LiveDataSections({ sessionKey, meetingKey, sessionName }: LiveDataSectionsProps) {
+export default function LiveDataSections({
+  sessionKey,
+  meetingKey,
+  sessionName,
+}: LiveDataSectionsProps) {
   const [laps, setLaps] = useState<Lap[]>([]);
   const [pits, setPits] = useState<PitStop[]>([]);
   const [stints, setStints] = useState<Stint[]>([]);
@@ -35,10 +47,19 @@ export default function LiveDataSections({ sessionKey, meetingKey, sessionName }
   const [positions, setPositions] = useState<Position[]>([]);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [driverMap, setDriverMap] = useState<
-    Map<number, { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }>
+    Map<
+      number,
+      { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }
+    >
   >(new Map());
   const driverFallbackCache = useRef<
-    Map<number, Map<number, { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }>>
+    Map<
+      number,
+      Map<
+        number,
+        { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }
+      >
+    >
   >(new Map());
 
   const handleToggle = useCallback((k: string) => {
@@ -125,7 +146,8 @@ export default function LiveDataSections({ sessionKey, meetingKey, sessionName }
     };
   }, [sessionKey, meetingKey]);
 
-  const dataAvailable = laps.length > 0 || pits.length > 0 || stints.length > 0 || weather.length > 0;
+  const dataAvailable =
+    laps.length > 0 || pits.length > 0 || stints.length > 0 || weather.length > 0;
   if (!dataAvailable) return null;
 
   const hasWeather = weather.length > 0;
@@ -135,30 +157,68 @@ export default function LiveDataSections({ sessionKey, meetingKey, sessionName }
     <div className="flex flex-col gap-3 mt-3">
       <div className="text-xs text-f1-dim font-semibold uppercase tracking-wider">📊 Live Data</div>
 
-      <LapTimesTable laps={laps} driverMap={driverMap} collapsed={collapsed} onToggle={handleToggle} />
-      <PitStopsTable pits={pits} driverMap={driverMap} collapsed={collapsed} onToggle={handleToggle} />
-      <TyreStints stints={stints} laps={laps} driverMap={driverMap} collapsed={collapsed} onToggle={handleToggle} isRace={isRace} />
-      {!sessionName?.startsWith('Practice') && (
-        <PositionChangesTable positions={positions} driverMap={driverMap} collapsed={collapsed} onToggle={handleToggle} />
+      <LapTimesTable
+        laps={laps}
+        driverMap={driverMap}
+        collapsed={collapsed}
+        onToggle={handleToggle}
+      />
+      <PitStopsTable
+        pits={pits}
+        driverMap={driverMap}
+        collapsed={collapsed}
+        onToggle={handleToggle}
+      />
+      <TyreStints
+        stints={stints}
+        laps={laps}
+        driverMap={driverMap}
+        collapsed={collapsed}
+        onToggle={handleToggle}
+        isRace={isRace}
+      />
+      {!sessionName?.startsWith("Practice") && (
+        <PositionChangesTable
+          positions={positions}
+          driverMap={driverMap}
+          collapsed={collapsed}
+          onToggle={handleToggle}
+        />
       )}
 
       {hasWeather && (
-        <LiveSection title="🌤️ Weather History" sectionKey="weather" collapsed={collapsed} onToggle={handleToggle}>
+        <LiveSection
+          title="🌤️ Weather History"
+          sectionKey="weather"
+          collapsed={collapsed}
+          onToggle={handleToggle}
+        >
           <WeatherChart data={weather} />
         </LiveSection>
       )}
 
-      <LiveSection title="🚩 Race Control" sectionKey="rc" collapsed={collapsed} onToggle={handleToggle}>
+      <LiveSection
+        title="🚩 Race Control"
+        sectionKey="rc"
+        collapsed={collapsed}
+        onToggle={handleToggle}
+      >
         <RaceControl sessionKey={sessionKey} />
       </LiveSection>
 
-      <LiveSection title="📻 Team Radio" sectionKey="radio" collapsed={collapsed} onToggle={handleToggle}>
+      <LiveSection
+        title="📻 Team Radio"
+        sectionKey="radio"
+        collapsed={collapsed}
+        onToggle={handleToggle}
+      >
         <TeamRadio
           sessionKey={sessionKey}
           drivers={
-            new Map(
-              [...driverMap.entries()].map(([n, d]) => [n, d.name_acronym]),
-            ) as Map<number, string>
+            new Map([...driverMap.entries()].map(([n, d]) => [n, d.name_acronym])) as Map<
+              number,
+              string
+            >
           }
         />
       </LiveSection>

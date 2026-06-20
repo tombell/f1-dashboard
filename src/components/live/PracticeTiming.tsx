@@ -29,10 +29,7 @@ export default function PracticeTiming({ sessionKey }: PracticeTimingProps) {
     let mounted = true;
     const fetchLaps = async () => {
       try {
-        const [l, d] = await Promise.all([
-          getLaps(sessionKey),
-          getDrivers(sessionKey),
-        ]);
+        const [l, d] = await Promise.all([getLaps(sessionKey), getDrivers(sessionKey)]);
         if (!mounted) return;
         setLaps(l);
         setDrivers(d);
@@ -66,42 +63,30 @@ export default function PracticeTiming({ sessionKey }: PracticeTimingProps) {
     const result: DriverLapSummary[] = [];
 
     for (const [dn, dl] of driverLaps) {
-      const cleanLaps = dl.filter(
-        (l) => l.lap_duration != null && !l.is_pit_out_lap,
-      );
+      const cleanLaps = dl.filter((l) => l.lap_duration != null && !l.is_pit_out_lap);
       const best = cleanLaps.reduce(
-        (b, l) =>
-          l.lap_duration != null && l.lap_duration < b ? l.lap_duration : b,
+        (b, l) => (l.lap_duration != null && l.lap_duration < b ? l.lap_duration : b),
         Infinity,
       );
 
       // Best sector times across all laps (not necessarily from same lap)
       const bestS1 = cleanLaps.reduce(
         (b, l) =>
-          l.duration_sector_1 != null && l.duration_sector_1 < b
-            ? l.duration_sector_1
-            : b,
+          l.duration_sector_1 != null && l.duration_sector_1 < b ? l.duration_sector_1 : b,
         Infinity,
       );
       const bestS2 = cleanLaps.reduce(
         (b, l) =>
-          l.duration_sector_2 != null && l.duration_sector_2 < b
-            ? l.duration_sector_2
-            : b,
+          l.duration_sector_2 != null && l.duration_sector_2 < b ? l.duration_sector_2 : b,
         Infinity,
       );
       const bestS3 = cleanLaps.reduce(
         (b, l) =>
-          l.duration_sector_3 != null && l.duration_sector_3 < b
-            ? l.duration_sector_3
-            : b,
+          l.duration_sector_3 != null && l.duration_sector_3 < b ? l.duration_sector_3 : b,
         Infinity,
       );
 
-      const topSpeed = Math.max(
-        ...dl.map((l) => l.st_speed_trap ?? 0),
-        0,
-      );
+      const topSpeed = Math.max(...dl.map((l) => l.st_speed_trap ?? 0), 0);
 
       const driver = driverMap.get(dn);
       result.push({
@@ -137,14 +122,10 @@ export default function PracticeTiming({ sessionKey }: PracticeTimingProps) {
     <div className="bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden">
       <div className="px-3 py-1.5 bg-f1-bg3 text-[11px] text-f1-dim uppercase tracking-wider flex items-center gap-2">
         <span>⏱ Practice Timing</span>
-        <span className="text-[10px] text-f1-dim font-normal">
-          ({summaries.length} drivers)
-        </span>
+        <span className="text-[10px] text-f1-dim font-normal">({summaries.length} drivers)</span>
       </div>
       {summaries.length === 0 ? (
-        <div className="px-3 py-4 text-xs text-f1-dim text-center">
-          Waiting for lap data...
-        </div>
+        <div className="px-3 py-4 text-xs text-f1-dim text-center">Waiting for lap data...</div>
       ) : (
         <table className="w-full border-collapse">
           <thead>
@@ -162,10 +143,7 @@ export default function PracticeTiming({ sessionKey }: PracticeTimingProps) {
           </thead>
           <tbody>
             {summaries.map((s, i) => {
-              const gap =
-                s.bestLap != null && fastestTime != null
-                  ? s.bestLap - fastestTime
-                  : null;
+              const gap = s.bestLap != null && fastestTime != null ? s.bestLap - fastestTime : null;
               return (
                 <tr
                   key={s.driver_number}
@@ -174,9 +152,7 @@ export default function PracticeTiming({ sessionKey }: PracticeTimingProps) {
                     borderLeft: `3px solid ${s.team_colour}`,
                   }}
                 >
-                  <td className="px-2 py-1.5 text-[11px] text-f1-dim tabular-nums w-6">
-                    {i + 1}
-                  </td>
+                  <td className="px-2 py-1.5 text-[11px] text-f1-dim tabular-nums w-6">{i + 1}</td>
                   <td className="px-2 py-1.5 text-xs font-semibold text-f1-bright">
                     {s.name_acronym}
                   </td>
@@ -184,9 +160,7 @@ export default function PracticeTiming({ sessionKey }: PracticeTimingProps) {
                     {s.totalLaps}
                   </td>
                   <td className="px-2 py-1.5 text-xs text-f1-green tabular-nums text-right font-medium">
-                    {s.bestLap != null
-                      ? `${s.bestLap.toFixed(3)}`
-                      : "—:—.———"}
+                    {s.bestLap != null ? `${s.bestLap.toFixed(3)}` : "—:—.———"}
                   </td>
                   <td className="px-2 py-1.5 text-xs text-f1-orange tabular-nums text-right">
                     {gap != null && gap > 0

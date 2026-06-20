@@ -71,8 +71,7 @@ export default function TimingTower({
     return map;
   }, [intervals]);
 
-  const isPractice =
-    session?.session_type === "Practice" && driverLaps.size > 0;
+  const isPractice = session?.session_type === "Practice" && driverLaps.size > 0;
 
   // Practice: fastest lap for gap calculation
   const fastestPracticeLap = useMemo(() => {

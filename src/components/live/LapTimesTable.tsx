@@ -1,16 +1,26 @@
 import { useMemo } from "react";
+
 import type { Lap } from "@/types/api";
+
 import DriverCell from "./DriverCell";
 import LiveSection from "./LiveSection";
 
 interface LapTimesTableProps {
   laps: Lap[];
-  driverMap: Map<number, { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }>;
+  driverMap: Map<
+    number,
+    { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }
+  >;
   collapsed: Record<string, boolean>;
   onToggle: (key: string) => void;
 }
 
-export default function LapTimesTable({ laps, driverMap, collapsed, onToggle }: LapTimesTableProps) {
+export default function LapTimesTable({
+  laps,
+  driverMap,
+  collapsed,
+  onToggle,
+}: LapTimesTableProps) {
   const summaries = useMemo(() => {
     const driverLaps = new Map<number, Lap[]>();
     for (const lap of laps) {
@@ -67,7 +77,10 @@ export default function LapTimesTable({ laps, driverMap, collapsed, onToggle }: 
         </thead>
         <tbody>
           {summaries.map((ls) => (
-            <tr key={ls.driver_number} className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3">
+            <tr
+              key={ls.driver_number}
+              className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3"
+            >
               <td className="px-3 py-2 text-xs font-semibold text-f1-bright">
                 <DriverCell driverNumber={ls.driver_number} driverMap={driverMap} />
               </td>

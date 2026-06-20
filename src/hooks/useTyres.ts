@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+
 import type { Stint } from "@/types/api";
 
 export function useTyres(stints: Stint[], currentLap: number) {

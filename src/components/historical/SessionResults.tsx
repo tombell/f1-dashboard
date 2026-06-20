@@ -211,7 +211,9 @@ function PracticeTable({ results }: { results: SessionResult[] }) {
               r.position === 1 ? "bg-f1-bg3/50" : ""
             }`}
           >
-            <td className={`px-3 py-2 text-xs font-bold ${posColor(r.position)}`}>P{r.position ?? "—"}</td>
+            <td className={`px-3 py-2 text-xs font-bold ${posColor(r.position)}`}>
+              P{r.position ?? "—"}
+            </td>
             <td className="px-3 py-2 text-xs">
               <span style={driverColorStyle(r.team_colour)} className="font-semibold">
                 {driverName(r)}

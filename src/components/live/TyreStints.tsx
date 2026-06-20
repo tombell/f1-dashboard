@@ -1,19 +1,31 @@
 import { useMemo } from "react";
-import type { Lap, Stint } from "@/types/api";
+
 import { compoundColor } from "@/constants/f1";
+import type { Lap, Stint } from "@/types/api";
+
 import DriverCell from "./DriverCell";
 import LiveSection from "./LiveSection";
 
 interface TyreStintsProps {
   stints: Stint[];
   laps: Lap[];
-  driverMap: Map<number, { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }>;
+  driverMap: Map<
+    number,
+    { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }
+  >;
   collapsed: Record<string, boolean>;
   onToggle: (key: string) => void;
   isRace: boolean;
 }
 
-export default function TyreStints({ stints, laps, driverMap, collapsed, onToggle, isRace }: TyreStintsProps) {
+export default function TyreStints({
+  stints,
+  laps,
+  driverMap,
+  collapsed,
+  onToggle,
+  isRace,
+}: TyreStintsProps) {
   const stintsByDriver = useMemo(() => {
     const map = new Map<number, Stint[]>();
     for (const s of stints) {
@@ -26,7 +38,12 @@ export default function TyreStints({ stints, laps, driverMap, collapsed, onToggl
   if (stints.length === 0) return null;
 
   return (
-    <LiveSection title="🏎️ Tyre Stints" sectionKey="stints" collapsed={collapsed} onToggle={onToggle}>
+    <LiveSection
+      title="🏎️ Tyre Stints"
+      sectionKey="stints"
+      collapsed={collapsed}
+      onToggle={onToggle}
+    >
       <div className="divide-y divide-f1-border">
         {(() => {
           const driverLapTotals = [...stintsByDriver.entries()].map(([dn, driverStints]) => ({

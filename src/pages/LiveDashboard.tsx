@@ -11,9 +11,9 @@ import {
   getRaceControl,
   getLaps,
 } from "@/api/openf1";
+import PracticeTiming from "@/components/live/PracticeTiming";
 import RaceControl from "@/components/live/RaceControl";
 import TeamRadio from "@/components/live/TeamRadio";
-import PracticeTiming from "@/components/live/PracticeTiming";
 import TimingTower from "@/components/live/TimingTower";
 import TrackClock from "@/components/live/TrackClock";
 import TrackMap from "@/components/live/TrackMap";
@@ -83,7 +83,9 @@ export default function LiveDashboard() {
         setError(null);
 
         // Process derived state
-        const lapsData: Lap[] = await (await fetch(`/v1/laps?session_key=${sk}&lap_number>=0`)).json();
+        const lapsData: Lap[] = await (
+          await fetch(`/v1/laps?session_key=${sk}&lap_number>=0`)
+        ).json();
         const { fastestLapDriver: flDriver, currentLap: cl } = processLaps(lapsData);
         setLaps(lapsData);
         if (flDriver !== null) setFastestLapDriver(flDriver);
@@ -191,9 +193,7 @@ export default function LiveDashboard() {
           <TeamRadio sessionKey={session?.session_key} drivers={driverNameMap} />
         </div>
       </div>
-      {session?.session_type === "Practice" && (
-        <PracticeTiming sessionKey={session.session_key} />
-      )}
+      {session?.session_type === "Practice" && <PracticeTiming sessionKey={session.session_key} />}
     </div>
   );
 }

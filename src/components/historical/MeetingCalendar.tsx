@@ -41,7 +41,7 @@ export default function MeetingCalendar({ meetings, onSelect }: MeetingCalendarP
 
   // Sort by date — cancelled stays in chronological position
   const sorted = [...meetings].toSorted(
-    (a, b) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime()
+    (a, b) => new Date(a.date_start).getTime() - new Date(b.date_start).getTime(),
   );
 
   return (

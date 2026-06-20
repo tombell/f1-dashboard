@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+
 import type { PitStop } from "@/types/api";
 
 const PIT_CLEAR_MS = 20_000;

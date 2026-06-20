@@ -1,16 +1,26 @@
 import { useMemo } from "react";
+
 import type { Position } from "@/types/api";
+
 import DriverCell from "./DriverCell";
 import LiveSection from "./LiveSection";
 
 interface PositionChangesTableProps {
   positions: Position[];
-  driverMap: Map<number, { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }>;
+  driverMap: Map<
+    number,
+    { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }
+  >;
   collapsed: Record<string, boolean>;
   onToggle: (key: string) => void;
 }
 
-export default function PositionChangesTable({ positions, driverMap, collapsed, onToggle }: PositionChangesTableProps) {
+export default function PositionChangesTable({
+  positions,
+  driverMap,
+  collapsed,
+  onToggle,
+}: PositionChangesTableProps) {
   const posChanges = useMemo(() => {
     const changes = new Map<number, { start: number | null; end: number | null }>();
     for (const pos of positions) {
@@ -27,7 +37,12 @@ export default function PositionChangesTable({ positions, driverMap, collapsed, 
   if (positions.length === 0) return null;
 
   return (
-    <LiveSection title="📊 Position Changes" sectionKey="positions" collapsed={collapsed} onToggle={onToggle}>
+    <LiveSection
+      title="📊 Position Changes"
+      sectionKey="positions"
+      collapsed={collapsed}
+      onToggle={onToggle}
+    >
       <table className="w-full border-collapse">
         <thead>
           <tr className="bg-f1-bg3 text-[11px] text-f1-dim font-semibold uppercase tracking-wider">

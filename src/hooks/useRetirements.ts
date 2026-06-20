@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
-import type { Driver, Position, RaceControlMessage, Stint } from "@/types/api";
+
 import { STALE_RETIRE, STALE_ACTIVE } from "@/constants/f1";
+import type { Driver, Position, RaceControlMessage, Stint } from "@/types/api";
 
 export function useRetirements() {
   const lastUpdateTimes = useRef<Map<number, number>>(new Map());
@@ -38,22 +39,16 @@ export function useRetirements() {
       }
 
       // Don't flag retirements during red flag (data stops for everyone)
-      const isRedFlag =
-        Array.isArray(rc) && rc.some((r) => (r.message || "").includes("RED FLAG"));
+      const isRedFlag = Array.isArray(rc) && rc.some((r) => (r.message || "").includes("RED FLAG"));
 
       if (isRedFlag) {
         // During red flag: compare lap counts to find genuine retirees
         const maxLap = Math.max(...stints.map((stint) => stint.lap_end ?? 0), 0);
         const redFlagStale = new Set<number>();
         for (const drv of drivers) {
-          const driverStints = stints.filter(
-            (stint) => stint.driver_number === drv.driver_number,
-          );
+          const driverStints = stints.filter((stint) => stint.driver_number === drv.driver_number);
           if (driverStints.length === 0) continue;
-          const lastLap = Math.max(
-            ...driverStints.map((stint) => stint.lap_end ?? 0),
-            0,
-          );
+          const lastLap = Math.max(...driverStints.map((stint) => stint.lap_end ?? 0), 0);
           if (lastLap > 0 && maxLap - lastLap >= 3) {
             redFlagStale.add(drv.driver_number);
           }

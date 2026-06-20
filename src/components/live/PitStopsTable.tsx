@@ -1,15 +1,24 @@
 import type { PitStop } from "@/types/api";
+
 import DriverCell from "./DriverCell";
 import LiveSection from "./LiveSection";
 
 interface PitStopsTableProps {
   pits: PitStop[];
-  driverMap: Map<number, { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }>;
+  driverMap: Map<
+    number,
+    { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }
+  >;
   collapsed: Record<string, boolean>;
   onToggle: (key: string) => void;
 }
 
-export default function PitStopsTable({ pits, driverMap, collapsed, onToggle }: PitStopsTableProps) {
+export default function PitStopsTable({
+  pits,
+  driverMap,
+  collapsed,
+  onToggle,
+}: PitStopsTableProps) {
   if (pits.length === 0) return null;
 
   return (
