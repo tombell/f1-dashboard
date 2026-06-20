@@ -275,7 +275,7 @@ export default function MeetingDetail({
       ) : (
         <>
           {/* Session selector */}
-          <div className="flex flex-col gap-1.5">
+          <div className="flex gap-2 overflow-x-auto pb-1">
             {sortedSessions.map((s) => {
               const isSelected = selectedSession?.session_key === s.session_key;
               return (
@@ -287,7 +287,7 @@ export default function MeetingDetail({
                   onKeyDown={isTesting ? undefined : handleSessionClickEvent}
                   disabled={isTesting}
                   aria-label={isTesting ? `${s.session_name} (no data available)` : s.session_name}
-                  className={`w-full text-left bg-f1-bg2 border rounded-lg px-4 py-3 flex justify-between items-center transition-colors font-inherit ${
+                  className={`min-w-[150px] shrink-0 text-left bg-f1-bg2 border rounded-lg px-4 py-3 transition-colors font-inherit ${
                     isTesting
                       ? "border-f1-border opacity-40 cursor-not-allowed"
                       : isSelected
@@ -295,14 +295,14 @@ export default function MeetingDetail({
                         : "border-f1-border hover:border-f1-blue hover:bg-f1-bg3 cursor-pointer"
                   }`}
                 >
-                  <div>
-                    <div className="text-xs font-semibold text-f1-bright">{s.session_name}</div>
-                    <div className="text-[11px] text-f1-dim">
-                      {SESSION_TYPE_LABELS[s.session_type] || s.session_type}
-                    </div>
+                  <div className="text-xs font-semibold text-f1-bright whitespace-nowrap">
+                    {s.session_name}
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-[11px] text-f1-dim">{formatDate(s.date_start)}</span>
+                  <div className="mt-1 text-[11px] text-f1-dim whitespace-nowrap">
+                    {SESSION_TYPE_LABELS[s.session_type] || s.session_type}
+                  </div>
+                  <div className="mt-2 text-[11px] text-f1-dim whitespace-nowrap">
+                    {formatDate(s.date_start)}
                   </div>
                 </button>
               );
