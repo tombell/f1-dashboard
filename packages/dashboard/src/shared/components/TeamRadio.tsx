@@ -111,12 +111,12 @@ export default function TeamRadio({ sessionKey, drivers }: TeamRadioProps) {
   }
 
   return (
-    <div className="h-full bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden flex flex-col">
+    <div className="h-full min-h-0 bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden flex flex-col">
       <div className="px-3 py-1.5 bg-f1-bg3 text-[11px] text-f1-dim uppercase tracking-wider flex items-center gap-2">
         <span>📻 Team Radio</span>
         <span className="text-[10px] text-f1-dim font-normal">({entries.length})</span>
       </div>
-      <div className="max-h-[320px] lg:max-h-none lg:flex-1 overflow-y-auto overscroll-contain">
+      <div className="max-h-[320px] min-h-0 lg:max-h-none lg:flex-1 overflow-y-auto overscroll-contain">
         {entries.map((entry, i) => {
           const driverName = drivers.get(entry.driver_number) ?? `#${entry.driver_number}`;
           const isPlaying = playingUrl === entry.recording_url;

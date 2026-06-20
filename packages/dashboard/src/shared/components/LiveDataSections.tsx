@@ -199,9 +199,9 @@ export default function LiveDataSections({
         />
       )}
 
-      <div className={hasWeather ? "grid gap-3 lg:grid-cols-4 lg:h-[400px]" : ""}>
+      <div className={hasWeather ? "grid gap-3 lg:grid-cols-4 lg:h-[400px] lg:min-h-0" : ""}>
         {hasWeather && (
-          <div className="min-w-0 lg:col-span-3 lg:h-full">
+          <div className="min-w-0 lg:col-span-3 lg:h-full lg:min-h-0">
             <LiveSection
               title="🌤️ Weather History"
               sectionKey="weather"
@@ -214,7 +214,7 @@ export default function LiveDataSections({
             </LiveSection>
           </div>
         )}
-        <div className="min-w-0 lg:col-span-1 lg:h-full">
+        <div className="min-w-0 lg:col-span-1 lg:h-full lg:min-h-0">
           <TeamRadio sessionKey={sessionKey} drivers={driverAcronymMap} />
         </div>
       </div>

@@ -60,11 +60,11 @@ export default function RaceControl({ sessionKey }: RaceControlProps) {
   }
 
   return (
-    <div className="bg-f1-bg2 border border-f1-border rounded-lg flex flex-col overflow-hidden">
+    <div className="max-h-[240px] bg-f1-bg2 border border-f1-border rounded-lg flex flex-col overflow-hidden">
       <div className="px-4 py-2 bg-f1-bg3 text-xs font-semibold text-f1-dim uppercase tracking-wider">
         Race Control
       </div>
-      <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 space-y-1.5">
         {messages.length === 0 && (
           <div className="text-f1-dim text-xs text-center py-8">No race control messages yet</div>
         )}
