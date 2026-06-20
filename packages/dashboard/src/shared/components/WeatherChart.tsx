@@ -283,73 +283,34 @@ export default function WeatherChart({ data }: WeatherChartProps) {
             {t.label}
           </text>
         ))}
-
-        {/* Legend */}
-        <g fontSize={10}>
-          <line
-            x1={ML + 10}
-            y1={MT + 10}
-            x2={ML + 30}
-            y2={MT + 10}
-            stroke="#64b5f6"
-            strokeWidth={2}
-          />
-          <text x={ML + 34} y={MT + 13} fill="#aaa">
-            Air
-          </text>
-
-          <line
-            x1={ML + 10}
-            y1={MT + 24}
-            x2={ML + 30}
-            y2={MT + 24}
-            stroke="#ef5350"
-            strokeWidth={2}
-            opacity={0.8}
-          />
-          <text x={ML + 34} y={MT + 27} fill="#aaa">
-            Track
-          </text>
-
-          <line
-            x1={ML + 10}
-            y1={MT + 38}
-            x2={ML + 30}
-            y2={MT + 38}
-            stroke="#4caf50"
-            strokeWidth={1}
-            strokeDasharray="3,3"
-            opacity={0.4}
-          />
-          <text x={ML + 34} y={MT + 41} fill="#aaa">
-            Humidity
-          </text>
-
-          {/* Rain legend */}
-          <rect x={ML + 10} y={MT + 44} width={20} height={8} fill="#2196f3" opacity={0.2} rx={1} />
-          <text x={ML + 34} y={MT + 52} fill="#aaa">
-            Rain
-          </text>
-
-          {windDots.length > 0 && (
-            <>
-              <line
-                x1={ML + 10}
-                y1={MT + 60}
-                x2={ML + 30}
-                y2={MT + 60}
-                stroke="#aaa"
-                strokeWidth={0.8}
-                opacity={0.4}
-              />
-              <circle cx={ML + 20} cy={MT + 60} r={1.5} fill="#aaa" opacity={0.6} />
-              <text x={ML + 34} y={MT + 63} fill="#aaa">
-                Wind
-              </text>
-            </>
-          )}
-        </g>
       </svg>
+      <div className="mt-2 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] text-f1-dim">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-0.5 w-5 bg-[#64b5f6]" />
+          Air
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-0.5 w-5 bg-[#ef5350] opacity-80" />
+          Track
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-0 w-5 border-t border-dashed border-[#4caf50] opacity-40" />
+          Humidity
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="inline-block h-2 w-5 rounded-sm bg-[#2196f3] opacity-20" />
+          Rain
+        </span>
+        {windDots.length > 0 && (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="relative inline-block h-2 w-5">
+              <span className="absolute left-0 right-0 top-1/2 border-t border-[#aaa] opacity-40" />
+              <span className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#aaa] opacity-60" />
+            </span>
+            Wind
+          </span>
+        )}
+      </div>
     </div>
   );
 }
