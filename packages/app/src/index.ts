@@ -8,7 +8,8 @@ import fastifyStatic from "@fastify/static";
 import Fastify from "fastify";
 
 const PORT = parseInt(process.env.PORT ?? "8080", 10);
-const OPENF1_API_TARGET = process.env.OPENF1_API_TARGET ?? "http://localhost:8000";
+const OPENF1_API_TARGET =
+  process.env.OPENF1_API_TARGET ?? "http://brighid.solarflare-skink.ts.net:8000";
 
 const currentFilename = fileURLToPath(import.meta.url);
 const currentDir = dirname(currentFilename);
@@ -54,31 +55,17 @@ await fastify.register(proxy, {
   rewritePrefix: "/v1",
 });
 
-const livePath = resolve(currentDir, "..", "..", "live", "dist");
-const historicalPath = resolve(currentDir, "..", "..", "historical", "dist");
+const dashboardPath = resolve(currentDir, "..", "..", "dashboard", "dist");
+const hasDashboard = fs.existsSync(dashboardPath) && fs.statSync(dashboardPath).isDirectory();
 
-const hasLive = fs.existsSync(livePath) && fs.statSync(livePath).isDirectory();
-const hasHistorical = fs.existsSync(historicalPath) && fs.statSync(historicalPath).isDirectory();
-
-if (hasHistorical) {
+if (hasDashboard) {
   await fastify.register(fastifyStatic, {
-    root: historicalPath,
-    prefix: "/historical/",
-    decorateReply: false,
-  });
-  console.log(`[f1-app] Serving historical dashboard from ${historicalPath}`);
-} else {
-  console.log("[f1-app] No historical dashboard build found");
-}
-
-if (hasLive) {
-  await fastify.register(fastifyStatic, {
-    root: livePath,
+    root: dashboardPath,
     prefix: "/",
   });
-  console.log(`[f1-app] Serving live dashboard from ${livePath}`);
+  console.log(`[f1-app] Serving dashboard from ${dashboardPath}`);
 } else {
-  console.log("[f1-app] No live dashboard build found");
+  console.log("[f1-app] No dashboard build found");
 }
 
 fastify.setNotFoundHandler(async (request, reply) => {
@@ -86,21 +73,13 @@ fastify.setNotFoundHandler(async (request, reply) => {
     return reply.code(404).send({ error: "Not found" });
   }
 
-  if (request.url === "/historical" && hasHistorical) {
-    return reply.redirect("/historical/");
-  }
-
-  if (request.url.startsWith("/historical/") && hasHistorical) {
-    return reply.type("text/html").send(fs.createReadStream(resolve(historicalPath, "index.html")));
-  }
-
-  if (hasLive) {
-    return reply.type("text/html").send(fs.createReadStream(resolve(livePath, "index.html")));
+  if (hasDashboard) {
+    return reply.type("text/html").send(fs.createReadStream(resolve(dashboardPath, "index.html")));
   }
 
   return reply.code(404).send({
-    error: "Dashboard builds not found",
-    expected: [livePath, historicalPath],
+    error: "Dashboard build not found",
+    expected: dashboardPath,
   });
 });
 

@@ -1,6 +1,6 @@
 # F1 Dashboard
 
-Live timing dashboard and historical browser for Formula 1 sessions. The repo is a pnpm monorepo with a Fastify app server, two independent Vite web apps, and shared frontend code.
+Live timing dashboard and historical browser for Formula 1 sessions. The repo is a pnpm monorepo with one Vite SPA and one Fastify app/API proxy.
 
 ## Stack
 
@@ -13,16 +13,15 @@ Live timing dashboard and historical browser for Formula 1 sessions. The repo is
 
 ## Packages
 
-- `packages/app` — Fastify server named `@f1-dashboard/app`; serves built dashboards and proxies OpenF1.
-- `packages/live` — standalone live timing web app, served at `/` by the app server.
-- `packages/historical` — standalone historical browser web app, served at `/historical` by the app server.
-- `packages/shared` — OpenF1 API client, shared API types, F1 constants, header, weather chart, and reusable session data sections.
+- `packages/dashboard` — single SPA for live timing at `/` and historical browsing at `/historical`.
+- `packages/app` — Fastify server named `@f1-dashboard/app`; serves the built dashboard and proxies OpenF1.
+- `packages/ingestor` — ingestor package, if present, remains independent.
 
 ## Prerequisites
 
 - Node.js 22 or newer
 - pnpm
-- OpenF1 API available at `http://localhost:8000`, or set `OPENF1_API_TARGET`
+- OpenF1 API available at `http://brighid.solarflare-skink.ts.net:8000`, or set `OPENF1_API_TARGET`
 
 ## Install
 
@@ -32,41 +31,30 @@ pnpm install
 
 ## Development
 
-Run the Fastify app server:
+Run the dashboard and app server together:
 
 ```bash
+pnpm dev
+```
+
+Or run one package:
+
+```bash
+pnpm dev:dashboard
 pnpm dev:app
-```
-
-Run the live app Vite dev server:
-
-```bash
-pnpm dev:live
-```
-
-Run the historical app Vite dev server:
-
-```bash
-pnpm dev:historical
-```
-
-Run all dev servers at once:
-
-```bash
-pnpm dev:all
 ```
 
 Default development URLs:
 
-- App server: `http://localhost:8080`
-- Live Vite app: `http://localhost:5173/`
-- Historical Vite app: `http://localhost:5174/historical/`
+- Dashboard Vite app with hot reload: `http://localhost:5173/`
+- Historical route with hot reload: `http://localhost:5173/historical`
+- App server/API proxy: `http://localhost:8080`
 
-Both Vite dev servers proxy `/v1/*` to `http://localhost:8000`.
+In dev, open the Vite URL (`5173`) for HMR. The dashboard dev server proxies `/v1/*` to the Fastify app (`8080`), and the app proxies that to `OPENF1_API_TARGET`. Override the dashboard-to-app proxy with `DASHBOARD_API_PROXY_TARGET` if needed.
 
 ## Build
 
-Build the live app, historical app, and Fastify app server:
+Build the dashboard and Fastify app server:
 
 ```bash
 pnpm build
@@ -75,16 +63,14 @@ pnpm build
 Build one package:
 
 ```bash
-pnpm build:live
-pnpm build:historical
+pnpm build:dashboard
 pnpm build:app
 ```
 
 Build output paths:
 
+- Dashboard: `packages/dashboard/dist`
 - App server: `packages/app/dist`
-- Live: `packages/live/dist`
-- Historical: `packages/historical/dist`
 
 ## Run Built Output
 
@@ -98,7 +84,7 @@ pnpm start
 Open:
 
 - Live: `http://localhost:8080/`
-- Historical: `http://localhost:8080/historical/`
+- Historical: `http://localhost:8080/historical`
 - Health: `http://localhost:8080/health`
 
 The app server proxies `/v1/*` to OpenF1. Override the upstream target with:
@@ -128,14 +114,12 @@ pnpm lint:fix
 
 ## Development Process
 
-1. Put server/static/proxy work in `packages/app`.
-2. Put live app work in `packages/live`.
-3. Put historical browser work in `packages/historical`.
-4. Put reusable API/types/components/constants in `packages/shared`.
-5. Keep OpenF1 clean; dashboard-specific serving/proxy behavior belongs in `@f1-dashboard/app`.
-6. Run `pnpm build` after TypeScript, package boundary, routing, or Vite base changes.
-7. For deployment changes, verify `/`, `/historical/`, a static asset from each app, and a `/v1/*` API request through the app server.
+1. Put SPA work in `packages/dashboard`.
+2. Put server/static/proxy work in `packages/app`.
+3. Keep dashboard-specific serving/proxy behavior in `@f1-dashboard/app`.
+4. Run `pnpm build` after TypeScript, package boundary, routing, or Vite base changes.
+5. For deployment changes, verify `/`, `/historical`, a static asset, and a `/v1/*` API request through the app server.
 
 ## Data Source
 
-The apps expect an OpenF1-compatible API. Data availability depends on the upstream API and selected session. Live data may be sparse outside active race weekends, and historical coverage varies by endpoint and year.
+The dashboard expects an OpenF1-compatible API. Data availability depends on the upstream API and selected session. Live data may be sparse outside active race weekends, and historical coverage varies by endpoint and year.
