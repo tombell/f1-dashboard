@@ -210,6 +210,7 @@ export default function LiveDataSections({
               collapsed={collapsed}
               onToggle={handleToggle}
               collapsible={false}
+              className="h-full"
             >
               <WeatherChart data={weather} />
             </LiveSection>
