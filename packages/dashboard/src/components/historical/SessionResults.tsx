@@ -120,7 +120,7 @@ export default function SessionResults({
       {grid.length > 0 && (
         <div className="min-w-0 bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden">
           <div className="w-full text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center bg-transparent border-t-0 border-x-0">
-            <span>🏁 Starting Grid ({grid.length} drivers)</span>
+            <span>🏁 Starting Grid</span>
           </div>
           <table className="w-full border-collapse">
             <thead>
