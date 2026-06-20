@@ -31,8 +31,8 @@ export default function Header({
   currentLap,
   onRefresh,
   activeView,
-  liveHref = "/",
-  historicalHref = "/historical",
+  liveHref = "/live/",
+  historicalHref = "/historical/",
 }: HeaderProps) {
   const location = useLocation();
   const [countdown, setCountdown] = useState("");
