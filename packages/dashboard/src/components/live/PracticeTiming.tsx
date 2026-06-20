@@ -86,7 +86,10 @@ export default function PracticeTiming({ sessionKey }: PracticeTimingProps) {
         Infinity,
       );
 
-      const topSpeed = Math.max(...dl.map((l) => l.st_speed_trap ?? 0), 0);
+      const topSpeed = Math.max(
+        ...dl.flatMap((l) => [l.st_speed ?? 0, l.i1_speed ?? 0, l.i2_speed ?? 0]),
+        0,
+      );
 
       const driver = driverMap.get(dn);
       result.push({

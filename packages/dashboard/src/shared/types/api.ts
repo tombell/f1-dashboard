@@ -92,11 +92,9 @@ export interface Lap {
   segments_sector_3: number[] | null;
   lap_start_date: string;
   is_pitlap: boolean;
-  st_speed_trap: number | null;
-  st_speed_fl: number | null;
-  st_speed_s1: number | null;
-  st_speed_s2: number | null;
-  st_speed_s3: number | null;
+  st_speed: number | null;
+  i1_speed: number | null;
+  i2_speed: number | null;
 }
 
 export interface Position {

@@ -41,7 +41,10 @@ export default function LapTimesTable({
           cleanLaps.length > 0
             ? cleanLaps.reduce((s, l) => s + (l.lap_duration ?? 0), 0) / cleanLaps.length
             : 0;
-        const topSpeed = Math.max(...dl.map((l) => l.st_speed_trap ?? 0), 0);
+        const topSpeed = Math.max(
+          ...dl.flatMap((l) => [l.st_speed ?? 0, l.i1_speed ?? 0, l.i2_speed ?? 0]),
+          0,
+        );
         return {
           driver_number: dn,
           fastest: fastest !== Infinity ? fastest : null,
