@@ -31,14 +31,14 @@ export default function Header({
   currentLap,
   onRefresh,
   activeView,
-  liveHref = "/live/",
+  liveHref = "/",
   historicalHref = "/historical/",
 }: HeaderProps) {
   const location = useLocation();
   const [countdown, setCountdown] = useState("");
   const isHistorical = activeView
     ? activeView === "historical"
-    : location.pathname === "/historical";
+    : location.pathname.startsWith("/historical");
 
   // Update countdown every second if session is upcoming
   if (session && new Date(session.date_start).getTime() > Date.now()) {
