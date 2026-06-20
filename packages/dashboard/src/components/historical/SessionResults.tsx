@@ -134,9 +134,6 @@ export default function SessionResults({
                   <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
                     Driver
                   </th>
-                  <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
-                    Lap Time
-                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -157,11 +154,6 @@ export default function SessionResults({
                           {driverName(g)}
                         </span>
                         <span className="ml-1.5 text-[11px] text-f1-dim">· {g.team_name}</span>
-                      </td>
-                      <td className="px-3 py-2 text-xs text-f1-dim tabular-nums">
-                        {g.duration != null && typeof g.duration === "number"
-                          ? `${g.duration.toFixed(3)}s`
-                          : "-"}
                       </td>
                     </tr>
                   ))}
