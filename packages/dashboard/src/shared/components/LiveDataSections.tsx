@@ -105,15 +105,20 @@ export default function LiveDataSections({
           }
         }
 
-        // Fallback if per-session drivers are sparse — scope to the meeting
-        if (nameMap.size < 10 && meetingKey) {
+        // Fallback if per-session drivers are sparse or lack team data — scope to the meeting.
+        // Some FP1 driver lists include names but omit teams/colours, while later sessions have them.
+        const hasMissingTeamData = [...nameMap.values()].some(
+          (info) => !info.team_name || !info.team_colour,
+        );
+        if ((nameMap.size < 10 || hasMissingTeamData) && meetingKey) {
           let meetingCache = driverFallbackCache.current.get(meetingKey);
           if (!meetingCache) {
             try {
               const meetingDrivers = await getDrivers(undefined, meetingKey);
               meetingCache = new Map();
               for (const d of meetingDrivers) {
-                if (!meetingCache.has(d.driver_number)) {
+                const existing = meetingCache.get(d.driver_number);
+                if (!existing || (!existing.team_name && d.team_name)) {
                   meetingCache.set(d.driver_number, {
                     broadcast_name: d.broadcast_name ?? d.full_name ?? d.name_acronym,
                     name_acronym: d.name_acronym,
@@ -129,7 +134,15 @@ export default function LiveDataSections({
           }
           if (meetingCache) {
             for (const [dn, info] of meetingCache) {
-              if (!nameMap.has(dn)) nameMap.set(dn, info);
+              const existing = nameMap.get(dn);
+              if (!existing || !existing.team_name || !existing.team_colour) {
+                nameMap.set(dn, {
+                  broadcast_name: existing?.broadcast_name || info.broadcast_name,
+                  name_acronym: existing?.name_acronym || info.name_acronym,
+                  team_name: existing?.team_name || info.team_name,
+                  team_colour: existing?.team_colour || info.team_colour,
+                });
+              }
             }
           }
         }
