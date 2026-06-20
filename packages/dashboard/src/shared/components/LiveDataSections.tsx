@@ -199,9 +199,9 @@ export default function LiveDataSections({
         />
       )}
 
-      <div className={hasWeather ? "grid gap-3 lg:grid-cols-4 lg:h-[360px]" : ""}>
+      <div className={hasWeather ? "grid gap-3 lg:grid-cols-4 lg:h-[400px]" : ""}>
         {hasWeather && (
-          <div className="min-w-0 lg:col-span-3">
+          <div className="min-w-0 lg:col-span-3 lg:h-full">
             <LiveSection
               title="🌤️ Weather History"
               sectionKey="weather"
