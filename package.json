@@ -4,14 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "pnpm --filter @f1-dashboard/app dev",
-    "build": "pnpm --filter @f1-dashboard/app build",
-    "preview": "pnpm --filter @f1-dashboard/app preview",
+    "dev": "pnpm --filter @f1-dashboard/live dev",
+    "build": "pnpm --filter @f1-dashboard/live build",
+    "preview": "pnpm --filter @f1-dashboard/live preview",
     "serve": "python3 server.py",
-    "lint": "oxlint --config oxlint.config.ts packages/app/src packages/shared/src packages/historical/src",
-    "lint:fix": "oxlint --fix --config oxlint.config.ts packages/app/src packages/shared/src packages/historical/src",
-    "fmt": "oxfmt packages/app/src packages/shared/src packages/historical/src",
-    "fmt:check": "oxfmt --check packages/app/src packages/shared/src packages/historical/src"
+    "lint": "oxlint --config oxlint.config.ts packages/live/src packages/shared/src packages/historical/src",
+    "lint:fix": "oxlint --fix --config oxlint.config.ts packages/live/src packages/shared/src packages/historical/src",
+    "fmt": "oxfmt packages/live/src packages/shared/src packages/historical/src",
+    "fmt:check": "oxfmt --check packages/live/src packages/shared/src packages/historical/src"
   },
   "packageManager": "pnpm@11.0.0",
   "devDependencies": {

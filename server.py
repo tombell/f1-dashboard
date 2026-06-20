@@ -14,7 +14,7 @@ import subprocess
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
 API_TARGET = os.environ.get("OPENF1_API_TARGET", "http://localhost:8000")
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-STATIC_DIR = os.path.join(ROOT_DIR, "packages", "app", "dist")
+STATIC_DIR = os.path.join(ROOT_DIR, "packages", "live", "dist")
 
 
 class DashboardHandler(http.server.SimpleHTTPRequestHandler):

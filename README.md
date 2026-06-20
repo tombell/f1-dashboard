@@ -13,7 +13,7 @@ Live timing dashboard and historical browser for Formula 1 sessions. The fronten
 
 ## Packages
 
-- `packages/app` — Vite application, live dashboard route, production build output.
+- `packages/live` — Vite application, live dashboard route, production build output.
 - `packages/historical` — historical browser route and historical-only components.
 - `packages/shared` — OpenF1 API client, shared API types, F1 constants, header, weather chart, and reusable session data sections.
 
@@ -50,7 +50,7 @@ Useful routes:
 pnpm build
 ```
 
-The built frontend is written to `packages/app/dist`.
+The built frontend is written to `packages/live/dist`.
 
 Preview the built output with Vite:
 
@@ -102,7 +102,7 @@ pnpm lint:fix
 
 ## Development Process
 
-1. Put live app work in `packages/app`.
+1. Put live app work in `packages/live`.
 2. Put historical browser work in `packages/historical`.
 3. Put reusable API/types/components/constants in `packages/shared`.
 4. If API usage changes, update `packages/shared/src/api/openf1.ts` and related types.
