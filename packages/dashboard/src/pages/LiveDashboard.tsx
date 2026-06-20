@@ -10,6 +10,7 @@ import {
   getStints,
   getRaceControl,
 } from "@/shared/api/openf1";
+import BlankSlate from "@/shared/components/BlankSlate";
 import Header from "@/shared/components/Header";
 import RaceControl from "@/shared/components/RaceControl";
 import TeamRadio from "@/shared/components/TeamRadio";
@@ -159,7 +160,10 @@ export default function LiveDashboard() {
 
   const handleRefresh = useCallback(() => setError(null), []);
 
-  const displayError = sessionError || error;
+  const displayError = session ? error : null;
+  const blankSlateTitle = sessionKey ? "Session not available" : "No active session";
+  const blankSlateMessage =
+    sessionError ?? "Live timing will appear here when a session is active.";
 
   return (
     <div className="flex flex-col gap-3 p-4 h-full min-h-screen">
@@ -169,35 +173,43 @@ export default function LiveDashboard() {
         onRefresh={handleRefresh}
         activeView="live"
       />
-      <div className="flex items-center gap-3 flex-wrap">
-        <WeatherBar weather={latestWeather} />
-        <TrackClock />
-      </div>
+      {session && (
+        <div className="flex items-center gap-3 flex-wrap">
+          <WeatherBar weather={latestWeather} />
+          <TrackClock />
+        </div>
+      )}
       {displayError && (
         <div className="bg-f1-bg3 border border-f1-red/30 rounded-lg px-4 py-2 text-f1-red text-xs">
           {displayError}
         </div>
       )}
-      <div className="flex-1 grid grid-cols-[1fr_2fr] gap-3 min-h-0 max-lg:grid-cols-1">
-        <TimingTower
-          session={session}
-          drivers={drivers}
-          positions={latestPositions}
-          intervals={intervals}
-          positionChanges={positionChanges}
-          recentPits={recentPits}
-          fastestLapDriver={fastestLapDriver}
-          currentTyres={currentTyres}
-          retiredDrivers={retiredDrivers}
-          driverPenalties={driverPenalties}
-          driverLaps={driverLaps}
-        />
-        <div className="flex flex-col gap-3">
-          <TrackMap session={session} drivers={drivers} />
-          <RaceControl sessionKey={session?.session_key} />
-          <TeamRadio sessionKey={session?.session_key} drivers={driverNameMap} />
+      {!session ? (
+        <BlankSlate title={blankSlateTitle} icon="🏎️">
+          {blankSlateMessage}
+        </BlankSlate>
+      ) : (
+        <div className="flex-1 grid grid-cols-[1fr_2fr] gap-3 min-h-0 max-lg:grid-cols-1">
+          <TimingTower
+            session={session}
+            drivers={drivers}
+            positions={latestPositions}
+            intervals={intervals}
+            positionChanges={positionChanges}
+            recentPits={recentPits}
+            fastestLapDriver={fastestLapDriver}
+            currentTyres={currentTyres}
+            retiredDrivers={retiredDrivers}
+            driverPenalties={driverPenalties}
+            driverLaps={driverLaps}
+          />
+          <div className="flex flex-col gap-3">
+            <TrackMap session={session} drivers={drivers} />
+            <RaceControl sessionKey={session.session_key} />
+            <TeamRadio sessionKey={session.session_key} drivers={driverNameMap} />
+          </div>
         </div>
-      </div>
+      )}
       {session?.session_type === "Practice" && <PracticeTiming sessionKey={session.session_key} />}
     </div>
   );

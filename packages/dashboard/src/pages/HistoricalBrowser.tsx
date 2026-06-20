@@ -3,6 +3,7 @@ import type React from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { getMeetings } from "@/shared/api/openf1";
+import BlankSlate from "@/shared/components/BlankSlate";
 import Header from "@/shared/components/Header";
 import type { Meeting, Session } from "@/shared/types/api";
 
@@ -166,15 +167,21 @@ export default function HistoricalBrowser() {
         </select>
       </div>
 
-      {error && (
-        <div className="bg-f1-bg3 border border-f1-red/30 rounded-lg px-4 py-2 text-f1-red text-xs">
-          {error}
-        </div>
-      )}
-
       {loading && <div className="text-center py-8 text-f1-dim text-sm">Loading...</div>}
 
-      {!loading && view === "races" && (
+      {!loading && error && (
+        <BlankSlate title="Historical data unavailable" icon="📚">
+          {error}
+        </BlankSlate>
+      )}
+
+      {!loading && !error && meetings.length === 0 && (
+        <BlankSlate title={`No ${year} data yet`} icon="📅">
+          Historical races and standings will appear here once OpenF1 has data for this season.
+        </BlankSlate>
+      )}
+
+      {!loading && !error && meetings.length > 0 && view === "races" && (
         <>
           {selectedMeeting ? (
             <MeetingDetail
@@ -189,7 +196,9 @@ export default function HistoricalBrowser() {
         </>
       )}
 
-      {!loading && view === "standings" && <StandingsView meetings={meetings} year={year} />}
+      {!loading && !error && meetings.length > 0 && view === "standings" && (
+        <StandingsView meetings={meetings} year={year} />
+      )}
     </div>
   );
 }
