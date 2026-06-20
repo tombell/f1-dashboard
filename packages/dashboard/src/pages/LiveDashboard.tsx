@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import {
@@ -158,8 +158,6 @@ export default function LiveDashboard() {
     return map;
   }, [laps]);
 
-  const handleRefresh = useCallback(() => setError(null), []);
-
   const displayError = session ? error : null;
   const blankSlateTitle = sessionKey ? "Session not available" : "No active session";
   const blankSlateMessage =
@@ -167,12 +165,7 @@ export default function LiveDashboard() {
 
   return (
     <div className="flex flex-col gap-3 p-4 h-full min-h-screen">
-      <Header
-        session={session}
-        currentLap={currentLap}
-        onRefresh={handleRefresh}
-        activeView="live"
-      />
+      <Header session={session} currentLap={currentLap} activeView="live" />
       {session && (
         <div className="flex items-center gap-3 flex-wrap">
           <WeatherBar weather={latestWeather} />

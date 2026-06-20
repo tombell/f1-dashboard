@@ -6,7 +6,6 @@ import type { Session } from "@/shared/types/api";
 interface HeaderProps {
   session: Session | null;
   currentLap?: number;
-  onRefresh: () => void;
   activeView?: "live" | "historical";
   liveHref?: string;
   historicalHref?: string;
@@ -30,7 +29,6 @@ function isLive(dateStart: string, dateEnd: string): boolean {
 export default function Header({
   session,
   currentLap,
-  onRefresh,
   activeView,
   liveHref = "/",
   historicalHref = "/historical/",
@@ -103,12 +101,6 @@ export default function Header({
             )}
           </>
         )}
-        <button
-          onClick={onRefresh}
-          className="px-2.5 py-1 rounded bg-f1-bg4 text-f1-text border border-f1-border text-[11px] cursor-pointer font-inherit transition-colors hover:bg-f1-bg3 hover:border-f1-blue"
-        >
-          Refresh
-        </button>
       </div>
     </header>
   );

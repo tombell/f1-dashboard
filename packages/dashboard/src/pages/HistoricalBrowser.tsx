@@ -121,14 +121,12 @@ export default function HistoricalBrowser() {
     (e: React.ChangeEvent<HTMLSelectElement>) => handleYearChange(Number(e.target.value)),
     [handleYearChange],
   );
-  const handleRefresh = useCallback(() => {}, []);
-
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: currentYear - 2022 }, (_, i) => 2023 + i).toReversed();
 
   return (
     <div className="flex flex-col gap-3 p-4 h-full min-h-screen">
-      <Header session={session} onRefresh={handleRefresh} activeView="historical" />
+      <Header session={session} activeView="historical" />
 
       <div className="bg-f1-bg2 border border-f1-border rounded-lg px-5 py-3.5 flex items-center flex-wrap gap-3">
         <select
