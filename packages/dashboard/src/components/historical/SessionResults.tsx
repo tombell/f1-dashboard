@@ -77,11 +77,12 @@ export default function SessionResults({
 
   // Sort by position (null positions go to end)
   const sorted = [...results].toSorted((a, b) => (a.position ?? 999) - (b.position ?? 999));
+  const layoutClass = grid.length > 0 ? "mt-1.5 grid gap-1.5 lg:grid-cols-2" : "mt-1.5";
 
   return (
-    <>
+    <div className={layoutClass}>
       {/* Main results table */}
-      <div className="bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden mt-1.5">
+      <div className="min-w-0 bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden">
         <button
           /* eslint-disable-next-line jsx-no-new-function-as-prop */
           onClick={() => setResultsOpen((o) => !o)}
@@ -113,7 +114,7 @@ export default function SessionResults({
 
       {/* Starting grid */}
       {grid.length > 0 && (
-        <div className="bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden mt-1.5">
+        <div className="min-w-0 bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden">
           <button
             /* eslint-disable-next-line jsx-no-new-function-as-prop */
             onClick={() => setGridOpen((o) => !o)}
@@ -162,7 +163,7 @@ export default function SessionResults({
           )}
         </div>
       )}
-    </>
+    </div>
   );
 }
 
