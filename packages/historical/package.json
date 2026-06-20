@@ -1,0 +1,17 @@
+{
+  "name": "@f1-dashboard/historical",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@f1-dashboard/shared": "workspace:*",
+    "react": "^19.0.0",
+    "react-router-dom": "^7.5.0"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}

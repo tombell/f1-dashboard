@@ -7,7 +7,31 @@ settings:
 importers:
 
   .:
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.17)
+      oxfmt:
+        specifier: ^0.54.0
+        version: 0.54.0
+      oxlint:
+        specifier: ^1.68.0
+        version: 1.69.0
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
+  packages/app:
     dependencies:
+      '@f1-dashboard/historical':
+        specifier: workspace:*
+        version: link:../historical
+      '@f1-dashboard/shared':
+        specifier: workspace:*
+        version: link:../shared
       react:
         specifier: ^19.0.0
         version: 19.2.7
@@ -45,6 +69,35 @@ importers:
       vite:
         specifier: ^8.0.16
         version: 8.0.16(jiti@2.7.0)
+
+  packages/historical:
+    dependencies:
+      '@f1-dashboard/shared':
+        specifier: workspace:*
+        version: link:../shared
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      react-router-dom:
+        specifier: ^7.5.0
+        version: 7.17.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+    devDependencies:
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
+  packages/shared:
+    dependencies:
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      react-router-dom:
+        specifier: ^7.5.0
+        version: 7.17.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+    devDependencies:
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
 
 packages:
 

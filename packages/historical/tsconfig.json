@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@f1-dashboard/shared": [
+        "../shared/src/index.ts"
+      ],
+      "@f1-dashboard/shared/*": [
+        "../shared/src/*"
+      ]
+    }
+  },
+  "include": [
+    "src",
+    "../shared/src"
+  ]
+}
