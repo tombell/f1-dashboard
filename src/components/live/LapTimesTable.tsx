@@ -41,7 +41,7 @@ export default function LapTimesTable({ laps, driverMap, collapsed, onToggle }: 
           topSpeed: topSpeed > 0 ? topSpeed : null,
         };
       })
-      .sort((a, b) => {
+      .toSorted((a, b) => {
         // Fastest lap ascending — nulls (no clean lap) at the bottom
         if (a.fastest === null && b.fastest === null) return 0;
         if (a.fastest === null) return 1;
