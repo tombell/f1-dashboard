@@ -151,7 +151,7 @@ export default function WeatherChart({ data }: WeatherChartProps) {
 
   return (
     <div className="w-full py-2">
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full max-h-[280px]">
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-[280px] w-full">
         {/* Horizontal grid lines */}
         {gridYPositions.map((y) => (
           <line key={y} x1={ML} y1={y} x2={W - MR} y2={y} stroke="#2a2a2a" strokeWidth={1} />
