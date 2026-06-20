@@ -60,7 +60,7 @@ export default function RaceControl({ sessionKey }: RaceControlProps) {
   }
 
   return (
-    <div className="max-h-[240px] bg-f1-bg2 border border-f1-border rounded-lg flex flex-col overflow-hidden">
+    <div className="max-h-[480px] bg-f1-bg2 border border-f1-border rounded-lg flex flex-col overflow-hidden">
       <div className="px-4 py-2 bg-f1-bg3 text-xs font-semibold text-f1-dim uppercase tracking-wider">
         Race Control
       </div>
