@@ -55,7 +55,8 @@ export default function SessionResults({
     [isSprint],
   );
   const [resultsOpen, setResultsOpen] = useState(true);
-  const [gridOpen, setGridOpen] = useState(true);
+  const resultsCollapsible = tableType !== "qualifying";
+  const showResults = resultsCollapsible ? resultsOpen : true;
 
   // Qualifying: find fastest time in each segment
   const segFastest = useMemo(() => {
@@ -83,21 +84,28 @@ export default function SessionResults({
     <div className={layoutClass}>
       {/* Main results table */}
       <div className="min-w-0 bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden">
-        <button
-          /* eslint-disable-next-line jsx-no-new-function-as-prop */
-          onClick={() => setResultsOpen((o) => !o)}
-          className="w-full text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center cursor-pointer bg-transparent border-t-0 border-x-0 hover:bg-f1-bg3 transition-colors"
-        >
-          <span>{sessionName} Results</span>
-          <span className="flex items-center gap-2">
-            <span className="text-f1-dim text-[11px]">{results.length} drivers</span>
-            <span className={`transition-transform ${resultsOpen ? "rotate-0" : "-rotate-90"}`}>
-              ▼
+        {resultsCollapsible ? (
+          <button
+            /* eslint-disable-next-line jsx-no-new-function-as-prop */
+            onClick={() => setResultsOpen((o) => !o)}
+            className="w-full text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center cursor-pointer bg-transparent border-t-0 border-x-0 hover:bg-f1-bg3 transition-colors"
+          >
+            <span>{sessionName} Results</span>
+            <span className="flex items-center gap-2">
+              <span className="text-f1-dim text-[11px]">{results.length} drivers</span>
+              <span className={`transition-transform ${resultsOpen ? "rotate-0" : "-rotate-90"}`}>
+                ▼
+              </span>
             </span>
-          </span>
-        </button>
+          </button>
+        ) : (
+          <div className="w-full text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center bg-transparent border-t-0 border-x-0">
+            <span>{sessionName} Results</span>
+            <span className="text-f1-dim text-[11px]">{results.length} drivers</span>
+          </div>
+        )}
 
-        {resultsOpen && (
+        {showResults && (
           <>
             {tableType === "practice" && <PracticeTable results={sorted} />}
             {tableType === "qualifying" && (
@@ -115,52 +123,43 @@ export default function SessionResults({
       {/* Starting grid */}
       {grid.length > 0 && (
         <div className="min-w-0 bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden">
-          <button
-            /* eslint-disable-next-line jsx-no-new-function-as-prop */
-            onClick={() => setGridOpen((o) => !o)}
-            className="w-full text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center cursor-pointer bg-transparent border-t-0 border-x-0 hover:bg-f1-bg3 transition-colors"
-          >
+          <div className="w-full text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center bg-transparent border-t-0 border-x-0">
             <span>🏁 Starting Grid ({grid.length} drivers)</span>
-            <span className={`transition-transform ${gridOpen ? "rotate-0" : "-rotate-90"}`}>
-              ▼
-            </span>
-          </button>
-          {gridOpen && (
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-f1-bg3">
-                  <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
-                    Pos
-                  </th>
-                  <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
-                    Driver
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...grid]
-                  .toSorted((a, b) => (a.position ?? 999) - (b.position ?? 999))
-                  .map((g) => (
-                    <tr
-                      key={`${g.driver_number}-${g.position}`}
-                      className={`border-b border-f1-border last:border-b-0 hover:bg-f1-bg3 ${
-                        g.position === 1 ? "bg-f1-bg3/50" : ""
-                      }`}
-                    >
-                      <td className={`px-3 py-2 text-xs font-bold ${posColor(g.position)}`}>
-                        P{g.position}
-                      </td>
-                      <td className="px-3 py-2 text-xs">
-                        <span style={driverColorStyle(g.team_colour)} className="font-semibold">
-                          {driverName(g)}
-                        </span>
-                        <span className="ml-1.5 text-[11px] text-f1-dim">· {g.team_name}</span>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          )}
+          </div>
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-f1-bg3">
+                <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
+                  Pos
+                </th>
+                <th className="text-[11px] text-f1-dim font-semibold uppercase tracking-wider px-3 py-2 text-left">
+                  Driver
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...grid]
+                .toSorted((a, b) => (a.position ?? 999) - (b.position ?? 999))
+                .map((g) => (
+                  <tr
+                    key={`${g.driver_number}-${g.position}`}
+                    className={`border-b border-f1-border last:border-b-0 hover:bg-f1-bg3 ${
+                      g.position === 1 ? "bg-f1-bg3/50" : ""
+                    }`}
+                  >
+                    <td className={`px-3 py-2 text-xs font-bold ${posColor(g.position)}`}>
+                      P{g.position}
+                    </td>
+                    <td className="px-3 py-2 text-xs">
+                      <span style={driverColorStyle(g.team_colour)} className="font-semibold">
+                        {driverName(g)}
+                      </span>
+                      <span className="ml-1.5 text-[11px] text-f1-dim">· {g.team_name}</span>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
