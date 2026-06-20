@@ -209,6 +209,7 @@ export default function LiveDataSections({
               sectionKey="weather"
               collapsed={collapsed}
               onToggle={handleToggle}
+              collapsible={false}
             >
               <WeatherChart data={weather} />
             </LiveSection>
