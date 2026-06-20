@@ -170,8 +170,6 @@ export default function LiveDataSections({
 
   return (
     <div className="flex flex-col gap-3 mt-3">
-      <div className="text-xs text-f1-dim font-semibold uppercase tracking-wider">📊 Live Data</div>
-
       <LapTimesTable
         laps={laps}
         driverMap={driverMap}
