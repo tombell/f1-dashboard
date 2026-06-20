@@ -23,7 +23,7 @@ export default function PitStopsTable({
 
   return (
     <LiveSection title="🛑 Pit Stops" sectionKey="pits" collapsed={collapsed} onToggle={onToggle}>
-      <div className="max-h-[260px] overflow-y-auto overscroll-contain">
+      <div className="max-h-[520px] overflow-y-auto overscroll-contain">
         <table className="w-full border-collapse">
           <thead className="sticky top-0 z-10">
             <tr className="bg-f1-bg3 text-[11px] text-f1-dim font-semibold uppercase tracking-wider">
