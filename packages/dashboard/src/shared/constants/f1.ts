@@ -1,5 +1,5 @@
 // Tyre compound display colours
-export const COMPOUND_COLORS: Record<string, string> = {
+const COMPOUND_COLORS: Record<string, string> = {
   SOFT: "#ff3333",
   MEDIUM: "#ffd600",
   HARD: "#cccccc",
@@ -30,24 +30,6 @@ export const SESSION_TYPE_LABELS: Record<string, string> = {
   race: "Race",
   sprint: "Sprint",
 };
-
-// Standard F1 points system
-export const POINTS_SYSTEM: Record<number, number> = {
-  1: 25,
-  2: 18,
-  3: 15,
-  4: 12,
-  5: 10,
-  6: 8,
-  7: 6,
-  8: 4,
-  9: 2,
-  10: 1,
-};
-
-export function calcPoints(position: number): number {
-  return POINTS_SYSTEM[position] ?? 0;
-}
 
 export function compoundColor(compound: string): string {
   const norm = compound?.toUpperCase() || "";

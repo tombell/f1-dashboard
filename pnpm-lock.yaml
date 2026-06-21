@@ -8,12 +8,6 @@ importers:
 
   .:
     devDependencies:
-      '@types/react':
-        specifier: ^19.0.0
-        version: 19.2.17
-      '@types/react-dom':
-        specifier: ^19.0.0
-        version: 19.2.3(@types/react@19.2.17)
       oxfmt:
         specifier: ^0.54.0
         version: 0.54.0

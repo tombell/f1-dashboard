@@ -105,20 +105,6 @@ export interface Position {
   date: string;
 }
 
-export interface CarData {
-  session_key: number;
-  meeting_key: number;
-  driver_number: number;
-  rpm: number | null;
-  speed: number | null;
-  throttle: number | null;
-  brake: number | null;
-  drs: number | null;
-  gear: number | null;
-  n_gear: number | null;
-  date: string;
-}
-
 export interface Interval {
   session_key: number;
   meeting_key: number;
@@ -188,65 +174,10 @@ export interface Location {
   date: string;
 }
 
-export interface Overtake {
-  session_key: number;
-  meeting_key: number;
-  driver_number: number;
-  overtake_count: number;
-  date: string;
-}
-
 export interface TeamRadioEntry {
   session_key: number;
   meeting_key: number;
   driver_number: number;
   date: string;
   recording_url: string;
-}
-
-export interface ChampionshipDriver {
-  driver_number: number;
-  full_name: string;
-  name_acronym: string;
-  team_name: string;
-  team_colour: string;
-  position: number;
-  points: number;
-  wins: number;
-  country_code: string;
-  session_key: number;
-  meeting_key: number;
-}
-
-// Aggregated types for the dashboard
-
-export interface DriverInfo {
-  driver_number: number;
-  broadcast_name: string;
-  full_name: string;
-  name_acronym: string;
-  team_name: string;
-  team_colour: string;
-  country_code: string;
-  headshot_url?: string;
-}
-
-export interface PositionData {
-  driver_number: number;
-  position: number;
-  date: string;
-}
-
-export interface TimingTowerEntry {
-  driver: DriverInfo;
-  position: number;
-  gap_to_leader: number | null;
-  interval: number | null;
-  lap_number?: number;
-  pit_status?: boolean;
-  compound?: string;
-  tyre_age?: number;
-  last_lap_time?: number | null;
-  speed?: number | null;
-  sector_times?: (number | null)[];
 }

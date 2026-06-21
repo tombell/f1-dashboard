@@ -21,23 +21,10 @@ export async function getMeetings(year?: number) {
   return fetchJson<import("@/shared/types/api").Meeting[]>(`/meetings${q}`);
 }
 
-export async function getMeeting(meetingKey: number) {
-  const q = buildQuery({ meeting_key: meetingKey });
-  const results = await fetchJson<import("@/shared/types/api").Meeting[]>(`/meetings${q}`);
-  return results[0] || null;
-}
-
 // Sessions
 export async function getSessions(meetingKey?: number, year?: number) {
   const q = buildQuery({ meeting_key: meetingKey, year });
   return fetchJson<import("@/shared/types/api").Session[]>(`/sessions${q}`);
-}
-
-export async function getSession(sessionKey: number) {
-  const results = await fetchJson<import("@/shared/types/api").Session[]>(
-    `/sessions?session_key=${sessionKey}`,
-  );
-  return results[0] || null;
 }
 
 export async function getLatestSession() {
@@ -81,12 +68,6 @@ export async function getIntervals(sessionKey: number) {
   return fetchJson<import("@/shared/types/api").Interval[]>(`/intervals?session_key=${sessionKey}`);
 }
 
-// Car Data
-export async function getCarData(sessionKey: number, driverNumber?: number) {
-  const q = buildQuery({ session_key: sessionKey, driver_number: driverNumber });
-  return fetchJson<import("@/shared/types/api").CarData[]>(`/car_data${q}`);
-}
-
 // Pit Stops
 export async function getPitStops(sessionKey: number) {
   return fetchJson<import("@/shared/types/api").PitStop[]>(`/pit?session_key=${sessionKey}`);
@@ -111,12 +92,6 @@ export async function getRaceControl(sessionKey: number) {
   );
 }
 
-// Championship Drivers
-export async function getChampionshipDrivers(sessionKey?: number) {
-  const q = buildQuery({ session_key: sessionKey });
-  return fetchJson<import("@/shared/types/api").ChampionshipDriver[]>(`/championship_drivers${q}`);
-}
-
 // Location
 export async function getLocation(sessionKey: number, driverNumber?: number) {
   const q = buildQuery({ session_key: sessionKey, driver_number: driverNumber });
@@ -128,9 +103,4 @@ export async function getTeamRadio(sessionKey: number) {
   return fetchJson<import("@/shared/types/api").TeamRadioEntry[]>(
     `/team_radio?session_key=${sessionKey}`,
   );
-}
-
-// Overtakes
-export async function getOvertakes(sessionKey: number) {
-  return fetchJson<import("@/shared/types/api").Overtake[]>(`/overtakes?session_key=${sessionKey}`);
 }

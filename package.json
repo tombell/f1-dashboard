@@ -22,10 +22,8 @@
   },
   "packageManager": "pnpm@11.0.0",
   "devDependencies": {
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "typescript": "^6.0.3",
+    "oxfmt": "^0.54.0",
     "oxlint": "^1.68.0",
-    "oxfmt": "^0.54.0"
+    "typescript": "^6.0.3"
   }
 }
