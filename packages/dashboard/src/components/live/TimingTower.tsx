@@ -49,6 +49,65 @@ function teamColor(teamName: string): string {
   return TEAM_COLORS[teamName] || "#666688";
 }
 
+interface DriverBadgesProps {
+  driverNumber: number;
+  recentPits: Set<number>;
+  currentTyres: Map<number, string>;
+  retiredDrivers: Set<number>;
+  driverPenalties: Map<number, string[]>;
+}
+
+function DriverBadges({
+  driverNumber,
+  recentPits,
+  currentTyres,
+  retiredDrivers,
+  driverPenalties,
+}: DriverBadgesProps) {
+  const compound = currentTyres.get(driverNumber);
+  const penalties = driverPenalties.get(driverNumber);
+
+  return (
+    <>
+      {recentPits.has(driverNumber) && (
+        <span className="text-[10px] bg-f1-blue/20 text-f1-blue font-bold px-1 rounded leading-none">
+          PIT
+        </span>
+      )}
+      {compound && (
+        <span
+          className={`text-[10px] font-bold px-1 rounded leading-none ${
+            TYRE_COLORS[compound.toUpperCase()] || "bg-gray-500"
+          }`}
+        >
+          {TYRE_LABELS[compound.toUpperCase()] || compound[0]}
+        </span>
+      )}
+      {retiredDrivers.has(driverNumber) && (
+        <span className="text-[10px] bg-red-600/30 text-red-400 font-bold px-1.5 rounded leading-none">
+          OUT
+        </span>
+      )}
+      {penalties?.includes("INVESTIGATION") && (
+        <span
+          className="text-[10px] bg-yellow-600 text-white font-bold px-1.5 rounded leading-none"
+          title="Under investigation"
+        >
+          INV
+        </span>
+      )}
+      {penalties?.includes("PENALTY") && (
+        <span
+          className="text-[10px] bg-orange-600 text-white font-bold px-1.5 rounded leading-none"
+          title="Penalty applied"
+        >
+          PEN
+        </span>
+      )}
+    </>
+  );
+}
+
 export default function TimingTower({
   session,
   drivers,
@@ -197,52 +256,13 @@ export default function TimingTower({
                   </span>
                   <span className="flex-1 flex items-center gap-2">
                     <span className="font-semibold text-f1-bright">{driver.name_acronym}</span>
-                    {recentPits.has(driver.driver_number) && (
-                      <span className="text-[10px] bg-f1-blue/20 text-f1-blue font-bold px-1 rounded leading-none">
-                        PIT
-                      </span>
-                    )}
-                    {(() => {
-                      const compound = currentTyres.get(driver.driver_number);
-                      if (!compound) return null;
-                      const tyreColor = TYRE_COLORS[compound.toUpperCase()] || "bg-gray-500";
-                      const label = TYRE_LABELS[compound.toUpperCase()] || compound[0];
-                      return (
-                        <span
-                          className={`text-[10px] font-bold px-1 rounded leading-none ${tyreColor}`}
-                        >
-                          {label}
-                        </span>
-                      );
-                    })()}
-                    {retiredDrivers.has(driver.driver_number) && (
-                      <span className="text-[10px] bg-red-600/30 text-red-400 font-bold px-1.5 rounded leading-none">
-                        OUT
-                      </span>
-                    )}
-                    {(() => {
-                      const pens = driverPenalties.get(driver.driver_number);
-                      return (
-                        <>
-                          {pens?.includes("INVESTIGATION") && (
-                            <span
-                              className="text-[10px] bg-yellow-600 text-white font-bold px-1.5 rounded leading-none"
-                              title="Under investigation"
-                            >
-                              INV
-                            </span>
-                          )}
-                          {pens?.includes("PENALTY") && (
-                            <span
-                              className="text-[10px] bg-orange-600 text-white font-bold px-1.5 rounded leading-none"
-                              title="Penalty applied"
-                            >
-                              PEN
-                            </span>
-                          )}
-                        </>
-                      );
-                    })()}
+                    <DriverBadges
+                      driverNumber={driver.driver_number}
+                      recentPits={recentPits}
+                      currentTyres={currentTyres}
+                      retiredDrivers={retiredDrivers}
+                      driverPenalties={driverPenalties}
+                    />
                     <span className="text-f1-dim text-[11px]">{driver.team_name}</span>
                   </span>
                   <span className="w-[20px] text-center">
@@ -274,52 +294,13 @@ export default function TimingTower({
                   <span className="w-[30px] font-bold text-f1-bright">{pos?.position ?? "—"}</span>
                   <span className="flex-1 flex items-center gap-2">
                     <span className="font-semibold text-f1-bright">{driver.name_acronym}</span>
-                    {recentPits.has(driver.driver_number) && (
-                      <span className="text-[10px] bg-f1-blue/20 text-f1-blue font-bold px-1 rounded leading-none">
-                        PIT
-                      </span>
-                    )}
-                    {(() => {
-                      const compound = currentTyres.get(driver.driver_number);
-                      if (!compound) return null;
-                      const tyreColor = TYRE_COLORS[compound.toUpperCase()] || "bg-gray-500";
-                      const label = TYRE_LABELS[compound.toUpperCase()] || compound[0];
-                      return (
-                        <span
-                          className={`text-[10px] font-bold px-1 rounded leading-none ${tyreColor}`}
-                        >
-                          {label}
-                        </span>
-                      );
-                    })()}
-                    {retiredDrivers.has(driver.driver_number) && (
-                      <span className="text-[10px] bg-red-600/30 text-red-400 font-bold px-1.5 rounded leading-none">
-                        OUT
-                      </span>
-                    )}
-                    {(() => {
-                      const pens = driverPenalties.get(driver.driver_number);
-                      return (
-                        <>
-                          {pens?.includes("INVESTIGATION") && (
-                            <span
-                              className="text-[10px] bg-yellow-600 text-white font-bold px-1.5 rounded leading-none"
-                              title="Under investigation"
-                            >
-                              INV
-                            </span>
-                          )}
-                          {pens?.includes("PENALTY") && (
-                            <span
-                              className="text-[10px] bg-orange-600 text-white font-bold px-1.5 rounded leading-none"
-                              title="Penalty applied"
-                            >
-                              PEN
-                            </span>
-                          )}
-                        </>
-                      );
-                    })()}
+                    <DriverBadges
+                      driverNumber={driver.driver_number}
+                      recentPits={recentPits}
+                      currentTyres={currentTyres}
+                      retiredDrivers={retiredDrivers}
+                      driverPenalties={driverPenalties}
+                    />
                     <span className="text-f1-dim text-[11px]">{driver.team_name}</span>
                   </span>
                   <span className="w-[20px] text-center">

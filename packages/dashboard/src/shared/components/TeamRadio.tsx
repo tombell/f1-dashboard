@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { getTeamRadio } from "@/shared/api/openf1";
 import type { TeamRadioEntry } from "@/shared/types/api";
@@ -12,7 +12,6 @@ export default function TeamRadio({ sessionKey, drivers }: TeamRadioProps) {
   const [entries, setEntries] = useState<TeamRadioEntry[]>([]);
   const [playingUrl, setPlayingUrl] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const seenKeys = useRef<Set<string>>(new Set());
 
   const playAudio = useCallback(
     (recordingUrl: string) => {
@@ -74,12 +73,6 @@ export default function TeamRadio({ sessionKey, drivers }: TeamRadioProps) {
         const data = await getTeamRadio(sessionKey);
         if (!mounted) return;
 
-        // Mark new entries
-        for (const e of data) {
-          const key = `${e.date}_${e.driver_number}`;
-          seenKeys.current.add(key);
-        }
-
         // Sort newest first
         const sorted = [...data].toSorted(
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
@@ -117,16 +110,14 @@ export default function TeamRadio({ sessionKey, drivers }: TeamRadioProps) {
         <span className="text-[10px] text-f1-dim font-normal">({entries.length})</span>
       </div>
       <div className="max-h-[320px] min-h-0 lg:max-h-none lg:flex-1 overflow-y-auto overscroll-contain">
-        {entries.map((entry, i) => {
+        {entries.map((entry) => {
           const driverName = drivers.get(entry.driver_number) ?? `#${entry.driver_number}`;
           const isPlaying = playingUrl === entry.recording_url;
           const time = formatTime(entry.date);
 
           return (
             <div
-              key={
-                `${entry.date}_${entry.driver_number}_${i}` /* eslint-disable-line react/no-array-index-key */
-              }
+              key={`${entry.date}_${entry.driver_number}_${entry.recording_url}`}
               className="flex items-center gap-2 px-3 py-1.5 text-xs border-b border-f1-border last:border-b-0 hover:bg-f1-bg3/30 transition-colors"
             >
               <button
