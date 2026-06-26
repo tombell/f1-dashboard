@@ -182,7 +182,7 @@ export default function LiveDashboard() {
           {blankSlateMessage}
         </BlankSlate>
       ) : (
-        <div className="flex-1 grid grid-cols-[1fr_2fr] gap-3 min-h-0 max-lg:grid-cols-1">
+        <div className="grid grid-cols-[1fr_2fr] gap-3 items-start max-lg:grid-cols-1">
           <TimingTower
             session={session}
             drivers={drivers}
@@ -196,14 +196,16 @@ export default function LiveDashboard() {
             driverPenalties={driverPenalties}
             driverLaps={driverLaps}
           />
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 min-w-0">
             <TrackMap session={session} drivers={drivers} />
+            {session.session_type === "Practice" && (
+              <PracticeTiming sessionKey={session.session_key} />
+            )}
             <RaceControl sessionKey={session.session_key} />
             <TeamRadio sessionKey={session.session_key} drivers={driverNameMap} />
           </div>
         </div>
       )}
-      {session?.session_type === "Practice" && <PracticeTiming sessionKey={session.session_key} />}
     </div>
   );
 }
