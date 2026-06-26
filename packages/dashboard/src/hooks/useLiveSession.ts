@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { getLatestSession } from "@/shared/api/openf1";
+import { getCurrentSession } from "@/shared/api/openf1";
 import { POLL_LIVE, POLL_EXPLICIT } from "@/shared/constants/f1";
 import type { Session } from "@/shared/types/api";
 
@@ -29,7 +29,7 @@ export function useLiveSession(sessionKey?: number): UseLiveSessionResult {
       try {
         const sessionRes = sessionKey
           ? await fetchExplicitSession(sessionKey)
-          : await getLatestSession();
+          : await getCurrentSession();
         const sess = Array.isArray(sessionRes) ? sessionRes[0] : sessionRes;
         if (!mounted) return;
 
@@ -38,19 +38,6 @@ export function useLiveSession(sessionKey?: number): UseLiveSessionResult {
           prevSession.current = null;
           setError(sessionKey ? "Session not found" : "No live session available");
           return;
-        }
-
-        // Auto-detected session: only show if it's actually live
-        if (!sessionKey) {
-          const now = Date.now();
-          const start = new Date(sess.date_start).getTime();
-          const end = sess.date_end ? new Date(sess.date_end).getTime() : now;
-          if (now < start || now > end) {
-            setSession(null);
-            prevSession.current = null;
-            setError("No live session available");
-            return;
-          }
         }
 
         prevSession.current = sess;
