@@ -55,6 +55,7 @@ interface DriverBadgesProps {
   currentTyres: Map<number, string>;
   retiredDrivers: Set<number>;
   driverPenalties: Map<number, string[]>;
+  showRetiredStatus: boolean;
 }
 
 function DriverBadges({
@@ -63,6 +64,7 @@ function DriverBadges({
   currentTyres,
   retiredDrivers,
   driverPenalties,
+  showRetiredStatus,
 }: DriverBadgesProps) {
   const compound = currentTyres.get(driverNumber);
   const penalties = driverPenalties.get(driverNumber);
@@ -83,7 +85,7 @@ function DriverBadges({
           {TYRE_LABELS[compound.toUpperCase()] || compound[0]}
         </span>
       )}
-      {retiredDrivers.has(driverNumber) && (
+      {showRetiredStatus && retiredDrivers.has(driverNumber) && (
         <span className="text-[10px] bg-red-600/30 text-red-400 font-bold px-1.5 rounded leading-none">
           OUT
         </span>
@@ -131,6 +133,7 @@ export default function TimingTower({
   }, [intervals]);
 
   const isPractice = session?.session_type === "Practice" && driverLaps.size > 0;
+  const showRetiredStatus = !isPractice;
 
   // Practice: fastest lap for gap calculation
   const fastestPracticeLap = useMemo(() => {
@@ -153,40 +156,34 @@ export default function TimingTower({
     [intervalMap],
   );
 
-  // Sort drivers by position, retired drivers at the bottom
+  // Sort drivers by position. In practice, cars regularly sit in the garage;
+  // don't treat stale timing data as retired/OUT.
   const sorted = useMemo(() => {
-    const active = [...drivers].filter((d) => !retiredDrivers.has(d.driver_number));
-    const retired = [...drivers].filter((d) => retiredDrivers.has(d.driver_number));
     if (isPractice) {
-      active.sort((a, b) => {
+      return drivers.toSorted((a, b) => {
         const la = driverLaps.get(a.driver_number);
         const lb = driverLaps.get(b.driver_number);
         const ta = la?.bestLap ?? 999;
         const tb = lb?.bestLap ?? 999;
         return ta - tb;
       });
-    } else {
-      active.sort((a, b) => {
-        const pa = positions.get(a.driver_number)?.position;
-        const pb = positions.get(b.driver_number)?.position;
-        // If both have position data, sort by position (normal behaviour)
-        if (pa != null && pb != null) return pa - pb;
-        // Driver with position data goes before one without
-        if (pa != null) return -1;
-        if (pb != null) return 1;
-        // Fall back to gap_to_leader from intervals
-        return gapSortKey(a.driver_number) - gapSortKey(b.driver_number);
-      });
     }
-    retired.sort((a, b) => {
+
+    const active = drivers.filter((d) => !retiredDrivers.has(d.driver_number));
+    const retired = drivers.filter((d) => retiredDrivers.has(d.driver_number));
+    const sortByPosition = (a: Driver, b: Driver) => {
       const pa = positions.get(a.driver_number)?.position;
       const pb = positions.get(b.driver_number)?.position;
+      // If both have position data, sort by position (normal behaviour)
       if (pa != null && pb != null) return pa - pb;
+      // Driver with position data goes before one without
       if (pa != null) return -1;
       if (pb != null) return 1;
+      // Fall back to gap_to_leader from intervals
       return gapSortKey(a.driver_number) - gapSortKey(b.driver_number);
-    });
-    return [...active, ...retired];
+    };
+
+    return [...active.toSorted(sortByPosition), ...retired.toSorted(sortByPosition)];
   }, [drivers, positions, retiredDrivers, isPractice, driverLaps, gapSortKey]);
 
   if (!session) {
@@ -241,7 +238,7 @@ export default function TimingTower({
           return (
             <div
               key={driver.driver_number}
-              className={`flex px-3 py-2 text-xs border-b border-f1-border last:border-b-0 hover:bg-f1-bg3/50 transition-colors ${changeClass} ${retiredDrivers.has(driver.driver_number) ? "opacity-40" : ""}`}
+              className={`flex px-3 py-2 text-xs border-b border-f1-border last:border-b-0 hover:bg-f1-bg3/50 transition-colors ${changeClass} ${showRetiredStatus && retiredDrivers.has(driver.driver_number) ? "opacity-40" : ""}`}
               style={{
                 borderLeft: `3px solid ${color}` /* eslint-disable-line react-perf/jsx-no-new-object-as-prop */,
               }}
@@ -262,6 +259,7 @@ export default function TimingTower({
                       currentTyres={currentTyres}
                       retiredDrivers={retiredDrivers}
                       driverPenalties={driverPenalties}
+                      showRetiredStatus={showRetiredStatus}
                     />
                     <span className="text-f1-dim text-[11px]">{driver.team_name}</span>
                   </span>
@@ -300,6 +298,7 @@ export default function TimingTower({
                       currentTyres={currentTyres}
                       retiredDrivers={retiredDrivers}
                       driverPenalties={driverPenalties}
+                      showRetiredStatus={showRetiredStatus}
                     />
                     <span className="text-f1-dim text-[11px]">{driver.team_name}</span>
                   </span>
