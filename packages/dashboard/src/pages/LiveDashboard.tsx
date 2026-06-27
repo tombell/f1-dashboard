@@ -198,8 +198,8 @@ export default function LiveDashboard() {
           />
           <div className="flex flex-col gap-3 min-w-0">
             <TrackMap session={session} drivers={drivers} />
-            {session.session_type === "Practice" && (
-              <PracticeTiming sessionKey={session.session_key} />
+            {(session.session_type === "Practice" || session.session_type === "Qualifying") && (
+              <PracticeTiming sessionKey={session.session_key} sessionType={session.session_type} />
             )}
             <RaceControl sessionKey={session.session_key} />
             <TeamRadio sessionKey={session.session_key} drivers={driverNameMap} />

@@ -5,6 +5,7 @@ import type { Lap, Driver } from "@/shared/types/api";
 
 interface PracticeTimingProps {
   sessionKey: number;
+  sessionType: "Practice" | "Qualifying";
 }
 
 interface DriverLapSummary {
@@ -20,7 +21,7 @@ interface DriverLapSummary {
   topSpeed: number | null;
 }
 
-export default function PracticeTiming({ sessionKey }: PracticeTimingProps) {
+export default function PracticeTiming({ sessionKey, sessionType }: PracticeTimingProps) {
   const [laps, setLaps] = useState<Lap[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
 
@@ -122,7 +123,7 @@ export default function PracticeTiming({ sessionKey }: PracticeTimingProps) {
   return (
     <div className="bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden">
       <div className="px-3 py-1.5 bg-f1-bg3 text-[11px] text-f1-dim uppercase tracking-wider flex items-center gap-2">
-        <span>⏱ Practice Timing</span>
+        <span>⏱ {sessionType} Timing</span>
         <span className="text-[10px] text-f1-dim font-normal">({summaries.length} drivers)</span>
       </div>
       {summaries.length === 0 ? (

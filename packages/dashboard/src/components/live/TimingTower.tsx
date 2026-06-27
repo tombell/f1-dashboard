@@ -132,18 +132,20 @@ export default function TimingTower({
     return map;
   }, [intervals]);
 
-  const isPractice = session?.session_type === "Practice" && driverLaps.size > 0;
-  const showRetiredStatus = !isPractice;
+  const isLapTimingSession =
+    (session?.session_type === "Practice" || session?.session_type === "Qualifying") &&
+    driverLaps.size > 0;
+  const showRetiredStatus = !isLapTimingSession;
 
-  // Practice: fastest lap for gap calculation
-  const fastestPracticeLap = useMemo(() => {
-    if (!isPractice) return null;
+  // Practice/qualifying: fastest lap for gap calculation
+  const fastestSessionLap = useMemo(() => {
+    if (!isLapTimingSession) return null;
     let best = Infinity;
     for (const [, info] of driverLaps) {
       if (info.bestLap != null && info.bestLap < best) best = info.bestLap;
     }
     return best !== Infinity ? best : null;
-  }, [isPractice, driverLaps]);
+  }, [isLapTimingSession, driverLaps]);
 
   // Convert gap_to_leader to a numeric sort key for when position data is unavailable
   const gapSortKey = useCallback(
@@ -156,10 +158,10 @@ export default function TimingTower({
     [intervalMap],
   );
 
-  // Sort drivers by position. In practice, cars regularly sit in the garage;
+  // Sort drivers by position. In practice/qualifying, cars regularly sit in the garage;
   // don't treat stale timing data as retired/OUT.
   const sorted = useMemo(() => {
-    if (isPractice) {
+    if (isLapTimingSession) {
       return drivers.toSorted((a, b) => {
         const la = driverLaps.get(a.driver_number);
         const lb = driverLaps.get(b.driver_number);
@@ -184,7 +186,7 @@ export default function TimingTower({
     };
 
     return [...active.toSorted(sortByPosition), ...retired.toSorted(sortByPosition)];
-  }, [drivers, positions, retiredDrivers, isPractice, driverLaps, gapSortKey]);
+  }, [drivers, positions, retiredDrivers, isLapTimingSession, driverLaps, gapSortKey]);
 
   if (!session) {
     return (
@@ -206,7 +208,7 @@ export default function TimingTower({
     <div className="bg-f1-bg2 border border-f1-border rounded-lg flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex px-3 py-2 bg-f1-bg3 text-[11px] text-f1-dim uppercase tracking-wider">
-        {isPractice ? (
+        {isLapTimingSession ? (
           <>
             <span className="w-[30px]">Laps</span>
             <span className="flex-1">Driver</span>
@@ -243,7 +245,7 @@ export default function TimingTower({
                 borderLeft: `3px solid ${color}` /* eslint-disable-line react-perf/jsx-no-new-object-as-prop */,
               }}
             >
-              {isPractice ? (
+              {isLapTimingSession ? (
                 <>
                   <span className="w-[30px] font-bold text-f1-bright tabular-nums">
                     {(() => {
@@ -279,8 +281,8 @@ export default function TimingTower({
                   <span className="w-[50px] text-right text-f1-orange tabular-nums">
                     {(() => {
                       const dl = driverLaps.get(driver.driver_number);
-                      if (dl?.bestLap != null && fastestPracticeLap != null) {
-                        const gap = dl.bestLap - fastestPracticeLap;
+                      if (dl?.bestLap != null && fastestSessionLap != null) {
+                        const gap = dl.bestLap - fastestSessionLap;
                         return gap > 0 ? `+${gap.toFixed(3)}` : "—";
                       }
                       return "—";
