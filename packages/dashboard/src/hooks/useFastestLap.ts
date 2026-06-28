@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 import type { Lap } from "@/shared/types/api";
 
@@ -18,7 +18,7 @@ export function useFastestLap() {
   const [fastestLapDriver, setFastestLapDriver] = useState<number | null>(null);
   const [currentLap, setCurrentLap] = useState<number>(0);
 
-  function processLaps(laps: Lap[]): UseFastestLapResult {
+  const processLaps = useCallback((laps: Lap[]): UseFastestLapResult => {
     for (const lap of laps) {
       if (lap.lap_duration == null) continue;
       if (!ref.current || lap.lap_duration < ref.current.time) {
@@ -42,7 +42,7 @@ export function useFastestLap() {
     const flDriver = ref.current?.driver ?? null;
     const cl = ref.current?.maxLap ?? 0;
     return { fastestLapDriver: flDriver, currentLap: cl };
-  }
+  }, []);
 
   return { processLaps, fastestLapDriver, setFastestLapDriver, currentLap, setCurrentLap };
 }

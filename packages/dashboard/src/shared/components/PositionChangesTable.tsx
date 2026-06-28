@@ -38,7 +38,8 @@ export default function PositionChangesTable({
 
   return (
     <LiveSection
-      title="📊 Position Changes"
+      title="Position Changes"
+      meta={`${posChanges.size} drivers`}
       sectionKey="positions"
       collapsed={collapsed}
       onToggle={onToggle}

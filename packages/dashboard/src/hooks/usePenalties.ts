@@ -2,7 +2,7 @@ import { useMemo } from "react";
 
 import type { RaceControlMessage } from "@/shared/types/api";
 
-const extractDriver = (entry: any): number | null => {
+const extractDriver = (entry: RaceControlMessage): number | null => {
   if (entry.driver_number) return entry.driver_number;
   const match = (entry.message || "").match(/CAR\s+(\d+)/);
   return match ? parseInt(match[1]) : null;

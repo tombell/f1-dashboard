@@ -1,20 +1,27 @@
 import { useCallback, useRef, useState } from "react";
 
 import { STALE_RETIRE, STALE_ACTIVE } from "@/shared/constants/f1";
-import type { Driver, Position, RaceControlMessage, Stint } from "@/shared/types/api";
+import type { Driver, Interval, Position, RaceControlMessage, Stint } from "@/shared/types/api";
 
 export function useRetirements() {
   const lastUpdateTimes = useRef<Map<number, number>>(new Map());
   const [retiredDrivers, setRetiredDrivers] = useState<Set<number>>(new Set());
 
   const detectRetirements = useCallback(
-    (drivers: Driver[], positions: Position[], rc: RaceControlMessage[], stints: Stint[]) => {
-      // Track last data update per driver
-      for (const pos of positions) {
-        const dateMs = new Date(pos.date).getTime();
-        const prev = lastUpdateTimes.current.get(pos.driver_number) ?? 0;
+    (
+      drivers: Driver[],
+      positions: Position[],
+      intervals: Interval[],
+      rc: RaceControlMessage[],
+      stints: Stint[],
+    ) => {
+      // Track last timing update per driver. Position updates only arrive when a car's
+      // race position changes; intervals update continuously while the car is running.
+      for (const item of [...positions, ...intervals]) {
+        const dateMs = new Date(item.date).getTime();
+        const prev = lastUpdateTimes.current.get(item.driver_number) ?? 0;
         if (dateMs > prev) {
-          lastUpdateTimes.current.set(pos.driver_number, dateMs);
+          lastUpdateTimes.current.set(item.driver_number, dateMs);
         }
       }
 

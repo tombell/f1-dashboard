@@ -37,6 +37,12 @@ export async function getLatestSession() {
   return results[0] || null;
 }
 
+export async function getSessionByKey(sessionKey: number) {
+  const q = buildQuery({ session_key: sessionKey });
+  const results = await fetchJson<import("@/shared/types/api").Session[]>(`/sessions${q}`);
+  return results[0] || null;
+}
+
 function sessionLiveWindowScore(
   session: import("@/shared/types/api").Session,
   nowMs: number,

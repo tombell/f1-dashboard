@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from "react";
 
+import Panel from "@/shared/components/Panel";
 import type { Session, Driver, Position, Interval } from "@/shared/types/api";
 
 interface TimingTowerProps {
@@ -190,22 +191,22 @@ export default function TimingTower({
 
   if (!session) {
     return (
-      <div className="bg-f1-bg2 border border-f1-border rounded-lg h-full flex items-center justify-center text-f1-dim text-sm">
+      <Panel bodyClassName="h-full flex items-center justify-center p-6 text-f1-dim text-sm">
         No active race weekend
-      </div>
+      </Panel>
     );
   }
 
   if (!drivers.length) {
     return (
-      <div className="bg-f1-bg2 border border-f1-border rounded-lg flex items-center justify-center text-f1-dim text-sm">
+      <Panel bodyClassName="flex items-center justify-center p-6 text-f1-dim text-sm">
         Waiting for data...
-      </div>
+      </Panel>
     );
   }
 
   return (
-    <div className="bg-f1-bg2 border border-f1-border rounded-lg flex flex-col overflow-hidden">
+    <Panel className="flex flex-col" bodyClassName="flex min-h-0 flex-1 flex-col">
       {/* Header */}
       <div className="flex px-3 py-2 bg-f1-bg3 text-[11px] text-f1-dim uppercase tracking-wider">
         {isLapTimingSession ? (
@@ -331,6 +332,6 @@ export default function TimingTower({
           );
         })}
       </div>
-    </div>
+    </Panel>
   );
 }

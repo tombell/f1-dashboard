@@ -1,6 +1,7 @@
-import { useState, useMemo } from "react";
+import { useCallback, useState, useMemo } from "react";
 import type React from "react";
 
+import Panel from "@/shared/components/Panel";
 import type { SessionResult } from "@/shared/types/api";
 
 interface SessionResultsProps {
@@ -53,6 +54,7 @@ export default function SessionResults({
   const [resultsOpen, setResultsOpen] = useState(true);
   const resultsCollapsible = tableType !== "qualifying";
   const showResults = resultsCollapsible ? resultsOpen : true;
+  const handleResultsToggle = useCallback(() => setResultsOpen((o) => !o), []);
 
   // Qualifying: find fastest time in each segment
   const segFastest = useMemo(() => {
@@ -79,49 +81,26 @@ export default function SessionResults({
   return (
     <div className={layoutClass}>
       {/* Main results table */}
-      <div className="min-w-0 bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden">
-        {resultsCollapsible ? (
-          <button
-            /* eslint-disable-next-line jsx-no-new-function-as-prop */
-            onClick={() => setResultsOpen((o) => !o)}
-            className="w-full text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center cursor-pointer bg-transparent border-t-0 border-x-0 hover:bg-f1-bg3 transition-colors"
-          >
-            <span>{sessionName} Results</span>
-            <span className="flex items-center gap-2">
-              <span className="text-f1-dim text-[11px]">{results.length} drivers</span>
-              <span className={`transition-transform ${resultsOpen ? "rotate-0" : "-rotate-90"}`}>
-                ▼
-              </span>
-            </span>
-          </button>
-        ) : (
-          <div className="w-full text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center bg-transparent border-t-0 border-x-0">
-            <span>{sessionName} Results</span>
-            <span className="text-f1-dim text-[11px]">{results.length} drivers</span>
-          </div>
+      <Panel
+        title={`${sessionName} Results`}
+        meta={`${results.length} drivers`}
+        collapsed={!showResults}
+        onToggle={resultsCollapsible ? handleResultsToggle : undefined}
+      >
+        {tableType === "practice" && <PracticeTable results={sorted} />}
+        {tableType === "qualifying" && (
+          <QualifyingTable
+            results={sorted}
+            segLabels={segLabels}
+            segFastest={segFastest as Record<number, { time: number; driver_number: number }>}
+          />
         )}
-
-        {showResults && (
-          <>
-            {tableType === "practice" && <PracticeTable results={sorted} />}
-            {tableType === "qualifying" && (
-              <QualifyingTable
-                results={sorted}
-                segLabels={segLabels}
-                segFastest={segFastest as Record<number, { time: number; driver_number: number }>}
-              />
-            )}
-            {tableType === "race" && <RaceTable results={sorted} />}
-          </>
-        )}
-      </div>
+        {tableType === "race" && <RaceTable results={sorted} />}
+      </Panel>
 
       {/* Starting grid */}
       {grid.length > 0 && (
-        <div className="min-w-0 bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden">
-          <div className="w-full text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center bg-transparent border-t-0 border-x-0">
-            <span>🏁 Starting Grid</span>
-          </div>
+        <Panel title="Starting Grid">
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-f1-bg3">
@@ -156,7 +135,7 @@ export default function SessionResults({
                 ))}
             </tbody>
           </table>
-        </div>
+        </Panel>
       )}
     </div>
   );

@@ -39,7 +39,8 @@ export default function TyreStints({
 
   return (
     <LiveSection
-      title="🏎️ Tyre Stints"
+      title="Tyre Stints"
+      meta={`${stintsByDriver.size} drivers`}
       sectionKey="stints"
       collapsed={collapsed}
       onToggle={onToggle}

@@ -1,4 +1,7 @@
+import { useCallback } from "react";
 import type { ReactNode } from "react";
+
+import Panel from "./Panel";
 
 interface LiveSectionProps {
   title: string;
@@ -8,15 +11,31 @@ interface LiveSectionProps {
   children: ReactNode;
   collapsible?: boolean;
   className?: string;
+  meta?: ReactNode;
 }
 
-export default function LiveSection({ title, children, className = "" }: LiveSectionProps) {
+export default function LiveSection({
+  title,
+  sectionKey,
+  collapsed,
+  onToggle,
+  children,
+  className = "",
+  collapsible = true,
+  meta,
+}: LiveSectionProps) {
+  const isCollapsed = collapsible ? Boolean(collapsed[sectionKey]) : false;
+  const handleToggle = useCallback(() => onToggle(sectionKey), [onToggle, sectionKey]);
+
   return (
-    <div className={`bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden ${className}`}>
-      <div className="w-full text-left text-xs font-semibold text-f1-bright px-4 py-3 border-b border-f1-border flex justify-between items-center bg-transparent border-t-0 border-x-0">
-        <span>{title}</span>
-      </div>
-      <div className="overflow-x-auto">{children}</div>
-    </div>
+    <Panel
+      title={title}
+      meta={meta}
+      collapsed={isCollapsed}
+      onToggle={collapsible ? handleToggle : undefined}
+      className={className}
+    >
+      {children}
+    </Panel>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 
 import { getLaps, getDrivers } from "@/shared/api/openf1";
+import Panel from "@/shared/components/Panel";
 import type { Lap, Driver } from "@/shared/types/api";
 
 interface PracticeTimingProps {
@@ -121,11 +122,7 @@ export default function PracticeTiming({ sessionKey, sessionType }: PracticeTimi
   const fastestTime = summaries.length > 0 ? summaries[0].bestLap : null;
 
   return (
-    <div className="bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden">
-      <div className="px-3 py-1.5 bg-f1-bg3 text-[11px] text-f1-dim uppercase tracking-wider flex items-center gap-2">
-        <span>⏱ {sessionType} Timing</span>
-        <span className="text-[10px] text-f1-dim font-normal">({summaries.length} drivers)</span>
-      </div>
+    <Panel title={`${sessionType} Timing`} meta={`${summaries.length} drivers`}>
       {summaries.length === 0 ? (
         <div className="px-3 py-4 text-xs text-f1-dim text-center">Waiting for lap data...</div>
       ) : (
@@ -194,6 +191,6 @@ export default function PracticeTiming({ sessionKey, sessionType }: PracticeTimi
           </table>
         </div>
       )}
-    </div>
+    </Panel>
   );
 }

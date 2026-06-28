@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 
 import type { Session } from "@/shared/types/api";
+
+import { DashboardMark } from "./icons";
+import SegmentedNav from "./SegmentedNav";
 
 interface HeaderProps {
   session: Session | null;
@@ -39,51 +42,48 @@ export default function Header({
     ? activeView === "historical"
     : location.pathname.startsWith("/historical");
 
-  // Update countdown every second if session is upcoming
-  if (session && new Date(session.date_start).getTime() > Date.now()) {
-    setTimeout(() => setCountdown(formatCountdown(session.date_start)), 1000);
-  }
+  useEffect(() => {
+    if (!session || new Date(session.date_start).getTime() <= Date.now()) {
+      setCountdown("");
+      return;
+    }
+
+    setCountdown(formatCountdown(session.date_start));
+    const interval = setInterval(() => setCountdown(formatCountdown(session.date_start)), 1000);
+    return () => clearInterval(interval);
+  }, [session]);
 
   const live = session ? isLive(session.date_start, session.date_end) : false;
+  const navItems = useMemo(
+    () => [
+      { value: "live" as const, label: "Live", href: liveHref },
+      { value: "historical" as const, label: "Historical", href: historicalHref },
+    ],
+    [historicalHref, liveHref],
+  );
 
   return (
-    <header className="bg-f1-bg2 border border-f1-border rounded-lg px-5 py-3.5 flex justify-between items-center flex-wrap gap-2">
-      <div className="flex items-center gap-2.5">
-        <span className="text-lg font-bold text-f1-bright flex items-center gap-2.5">
-          🏎️ F1 Dashboard
+    <header className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-f1-border bg-f1-bg2 px-3 py-2.5 md:px-4">
+      <div className="flex items-center gap-2">
+        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-f1-red text-white">
+          <DashboardMark />
         </span>
-        <span className="bg-f1-red text-white text-[11px] px-2 py-0.5 rounded font-semibold">
+        <span className="text-base font-bold text-f1-bright">F1 Dashboard</span>
+        <span className="rounded border border-f1-border bg-f1-bg3 px-1.5 py-0.5 text-[10px] font-semibold text-f1-dim">
           OpenF1
         </span>
       </div>
 
-      <nav className="flex gap-2 flex-wrap">
-        <a
-          href={liveHref}
-          className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-colors border border-transparent ${
-            !isHistorical
-              ? "bg-f1-red text-white border-white/20"
-              : "bg-f1-bg3 text-f1-text hover:bg-f1-bg4"
-          }`}
-        >
-          Live
-        </a>
-        <a
-          href={historicalHref}
-          className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-colors border border-transparent ${
-            isHistorical
-              ? "bg-f1-red text-white border-white/20"
-              : "bg-f1-bg3 text-f1-text hover:bg-f1-bg4"
-          }`}
-        >
-          Historical
-        </a>
-      </nav>
+      <SegmentedNav
+        ariaLabel="Dashboard views"
+        active={isHistorical ? "historical" : "live"}
+        items={navItems}
+      />
 
-      <div className="flex items-center gap-4 text-xs text-f1-dim flex-wrap">
+      <div className="flex min-h-6 items-center gap-3 text-[11px] text-f1-dim">
         {session && (
           <>
-            <span>{session.meeting_name || "—"}</span>
+            <span className="max-w-[220px] truncate">{session.meeting_name || "—"}</span>
             <span>{session.session_name}</span>
             {live && (
               <>
@@ -97,7 +97,7 @@ export default function Header({
               </>
             )}
             {countdown && (
-              <span className="text-f1-red font-semibold min-w-[80px] text-right">{countdown}</span>
+              <span className="min-w-[80px] text-right font-semibold text-f1-red">{countdown}</span>
             )}
           </>
         )}

@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import type React from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { getMeetings } from "@/shared/api/openf1";
 import BlankSlate from "@/shared/components/BlankSlate";
-import Header from "@/shared/components/Header";
+import DashboardLayout from "@/shared/components/DashboardLayout";
+import Panel from "@/shared/components/Panel";
+import SegmentedNav from "@/shared/components/SegmentedNav";
 import type { Meeting, Session } from "@/shared/types/api";
 
 import MeetingCalendar from "../components/historical/MeetingCalendar";
@@ -121,49 +123,35 @@ export default function HistoricalBrowser() {
     (e: React.ChangeEvent<HTMLSelectElement>) => handleYearChange(Number(e.target.value)),
     [handleYearChange],
   );
+  const viewItems = useMemo(
+    () => [
+      { value: "races" as const, label: "Races", onClick: handleRacesClick },
+      { value: "standings" as const, label: "Standings", onClick: handleStandingsClick },
+    ],
+    [handleRacesClick, handleStandingsClick],
+  );
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: currentYear - 2022 }, (_, i) => 2023 + i).toReversed();
 
   return (
-    <div className="flex flex-col gap-3 p-4 h-full min-h-screen">
-      <Header session={session} activeView="historical" />
-
-      <div className="bg-f1-bg2 border border-f1-border rounded-lg px-5 py-3.5 flex items-center flex-wrap gap-3">
-        <select
-          value={year}
-          onChange={handleYearSelect}
-          className="bg-f1-bg3 border border-f1-border rounded-md px-2.5 py-1.5 text-f1-bright text-xs font-semibold cursor-pointer outline-none focus:border-f1-red transition-colors font-mono"
-        >
-          {years.map((y) => (
-            <option key={y} value={y}>
-              {y}
-            </option>
-          ))}
-        </select>
-
-        <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={handleRacesClick}
-            className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-colors border border-transparent ${
-              view === "races"
-                ? "bg-f1-red text-white border-white/20"
-                : "bg-f1-bg3 text-f1-text hover:bg-f1-bg4"
-            }`}
+    <DashboardLayout session={session} activeView="historical">
+      <Panel bodyClassName="px-3 py-2">
+        <div className="flex items-center flex-wrap gap-2.5">
+          <select
+            value={year}
+            onChange={handleYearSelect}
+            className="bg-f1-bg3 border border-f1-border rounded-md px-2.5 py-1.5 text-f1-bright text-xs font-semibold cursor-pointer outline-none focus:border-f1-red transition-colors font-mono"
           >
-            Races
-          </button>
-          <button
-            onClick={handleStandingsClick}
-            className={`px-3.5 py-1.5 rounded-md text-xs font-medium transition-colors border border-transparent ${
-              view === "standings"
-                ? "bg-f1-red text-white border-white/20"
-                : "bg-f1-bg3 text-f1-text hover:bg-f1-bg4"
-            }`}
-          >
-            Standings
-          </button>
+            {years.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+
+          <SegmentedNav ariaLabel="Historical views" active={view} items={viewItems} />
         </div>
-      </div>
+      </Panel>
 
       {loading && <div className="text-center py-8 text-f1-dim text-sm">Loading...</div>}
 
@@ -197,6 +185,6 @@ export default function HistoricalBrowser() {
       {!loading && !error && meetings.length > 0 && view === "standings" && (
         <StandingsView meetings={meetings} year={year} />
       )}
-    </div>
+    </DashboardLayout>
   );
 }

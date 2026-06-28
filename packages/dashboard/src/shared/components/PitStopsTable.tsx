@@ -22,7 +22,13 @@ export default function PitStopsTable({
   if (pits.length === 0) return null;
 
   return (
-    <LiveSection title="🛑 Pit Stops" sectionKey="pits" collapsed={collapsed} onToggle={onToggle}>
+    <LiveSection
+      title="Pit Stops"
+      meta={`${pits.length} stops`}
+      sectionKey="pits"
+      collapsed={collapsed}
+      onToggle={onToggle}
+    >
       <div className="max-h-[520px] overflow-y-auto overscroll-contain">
         <table className="w-full border-collapse">
           <thead className="sticky top-0 z-10">

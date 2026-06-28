@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { getTeamRadio } from "@/shared/api/openf1";
+import { PauseIcon, PlayIcon } from "@/shared/components/icons";
+import Panel from "@/shared/components/Panel";
 import type { TeamRadioEntry } from "@/shared/types/api";
 
 interface TeamRadioProps {
@@ -104,37 +106,36 @@ export default function TeamRadio({ sessionKey, drivers }: TeamRadioProps) {
   }
 
   return (
-    <div className="h-full min-h-0 bg-f1-bg2 border border-f1-border rounded-lg overflow-hidden flex flex-col">
-      <div className="px-3 py-1.5 bg-f1-bg3 text-[11px] text-f1-dim uppercase tracking-wider flex items-center gap-2">
-        <span>📻 Team Radio</span>
-        <span className="text-[10px] text-f1-dim font-normal">({entries.length})</span>
-      </div>
-      <div className="max-h-[320px] min-h-0 lg:max-h-none lg:flex-1 overflow-y-auto overscroll-contain">
-        {entries.map((entry) => {
-          const driverName = drivers.get(entry.driver_number) ?? `#${entry.driver_number}`;
-          const isPlaying = playingUrl === entry.recording_url;
-          const time = formatTime(entry.date);
+    <Panel
+      title="Team Radio"
+      meta={entries.length}
+      className="flex h-full min-h-0 flex-col"
+      bodyClassName="max-h-[320px] min-h-0 lg:max-h-none lg:flex-1 overflow-y-auto overscroll-contain"
+    >
+      {entries.map((entry) => {
+        const driverName = drivers.get(entry.driver_number) ?? `#${entry.driver_number}`;
+        const isPlaying = playingUrl === entry.recording_url;
+        const time = formatTime(entry.date);
 
-          return (
-            <div
-              key={`${entry.date}_${entry.driver_number}_${entry.recording_url}`}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs border-b border-f1-border last:border-b-0 hover:bg-f1-bg3/30 transition-colors"
+        return (
+          <div
+            key={`${entry.date}_${entry.driver_number}_${entry.recording_url}`}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs border-b border-f1-border last:border-b-0 hover:bg-f1-bg3/30 transition-colors"
+          >
+            <button
+              onClick={handlePlay}
+              data-url={entry.recording_url}
+              className="w-6 h-6 flex items-center justify-center rounded bg-f1-bg3 hover:bg-f1-blue/30 text-f1-dim hover:text-f1-blue transition-colors shrink-0"
+              title={isPlaying ? "Pause" : "Play"}
             >
-              <button
-                onClick={handlePlay}
-                data-url={entry.recording_url}
-                className="w-6 h-6 flex items-center justify-center rounded bg-f1-bg3 hover:bg-f1-blue/30 text-f1-dim hover:text-f1-blue transition-colors shrink-0"
-                title={isPlaying ? "Pause" : "Play"}
-              >
-                {isPlaying ? "⏸" : "▶"}
-              </button>
-              <span className="font-semibold text-f1-bright w-[24px] shrink-0">{driverName}</span>
-              <span className="text-f1-dim text-[10px] ml-auto shrink-0">{time}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+              {isPlaying ? <PauseIcon /> : <PlayIcon />}
+            </button>
+            <span className="font-semibold text-f1-bright w-[24px] shrink-0">{driverName}</span>
+            <span className="text-f1-dim text-[10px] ml-auto shrink-0">{time}</span>
+          </div>
+        );
+      })}
+    </Panel>
   );
 }
 

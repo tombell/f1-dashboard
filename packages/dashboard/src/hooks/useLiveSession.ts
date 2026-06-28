@@ -1,20 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 
-import { getCurrentSession } from "@/shared/api/openf1";
+import { getCurrentSession, getSessionByKey } from "@/shared/api/openf1";
 import { POLL_LIVE, POLL_EXPLICIT } from "@/shared/constants/f1";
 import type { Session } from "@/shared/types/api";
 
 interface UseLiveSessionResult {
   session: Session | null;
   error: string | null;
-}
-
-async function fetchExplicitSession(sessionKey: number): Promise<Session[]> {
-  const res = await fetch(`/v1/sessions?session_key=${sessionKey}`);
-  if (!res.ok) {
-    throw new Error(`API ${res.status}: ${res.statusText}`);
-  }
-  return res.json();
 }
 
 export function useLiveSession(sessionKey?: number): UseLiveSessionResult {
@@ -27,10 +19,7 @@ export function useLiveSession(sessionKey?: number): UseLiveSessionResult {
 
     const fetchSession = async () => {
       try {
-        const sessionRes = sessionKey
-          ? await fetchExplicitSession(sessionKey)
-          : await getCurrentSession();
-        const sess = Array.isArray(sessionRes) ? sessionRes[0] : sessionRes;
+        const sess = sessionKey ? await getSessionByKey(sessionKey) : await getCurrentSession();
         if (!mounted) return;
 
         if (!sess) {
