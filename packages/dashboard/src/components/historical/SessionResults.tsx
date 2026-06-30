@@ -253,7 +253,7 @@ function QualifyingTable({
             .filter((i) => segFastest[i]?.driver_number === r.driver_number)
             .map((i) => (
               <span
-                key={i}
+                key={segLabels[i]}
                 className="text-f1-orange font-bold text-[11px]"
                 title={`Fastest ${segLabels[i]}`}
               >
@@ -280,7 +280,7 @@ function QualifyingTable({
                 {badges}
               </td>
               {[0, 1, 2].map((i) => (
-                <td key={i} className="px-3 py-2 text-xs tabular-nums">
+                <td key={segLabels[i]} className="px-3 py-2 text-xs tabular-nums">
                   {t[i] != null ? (
                     <span
                       className={

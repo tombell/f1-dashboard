@@ -15,55 +15,59 @@ import StandingsView from "../components/historical/StandingsView";
 
 type ViewTab = "races" | "standings";
 
+const EMPTY_MEETINGS: Meeting[] = [];
+
+interface MeetingsState {
+  year: number | null;
+  meetings: Meeting[];
+  error: string | null;
+}
+
 export default function HistoricalBrowser() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
-  const [session, _setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [meetingsState, setMeetingsState] = useState<MeetingsState>({
+    year: null,
+    meetings: [],
+    error: null,
+  });
 
   const year = Number(searchParams.get("year")) || new Date().getFullYear();
   const view = (searchParams.get("view") as ViewTab) || "races";
+  const meetingKey = searchParams.get("meeting");
+  const sessionKey = searchParams.get("session");
+  const loading = meetingsState.year !== year;
+  const meetings = loading ? EMPTY_MEETINGS : meetingsState.meetings;
+  const error = loading ? null : meetingsState.error;
+  const selectedMeeting = useMemo(() => {
+    if (!meetingKey) return null;
+    const key = Number(meetingKey);
+    return meetings.find((m) => m.meeting_key === key) ?? null;
+  }, [meetingKey, meetings]);
 
   // Load meetings
   useEffect(() => {
     let mounted = true;
-    setLoading(true);
     getMeetings(year)
       .then((data) => {
         if (!mounted) return;
-        setMeetings(data);
-        setError(null);
+        setMeetingsState({ year, meetings: data, error: null });
         return null;
       })
       .catch((e: unknown) => {
         if (!mounted) return;
-        setError(e instanceof Error ? e.message : "Failed to load meetings");
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
+        setMeetingsState({
+          year,
+          meetings: [],
+          error: e instanceof Error ? e.message : "Failed to load meetings",
+        });
       });
     return () => {
       mounted = false;
     };
   }, [year]);
 
-  // Check for deep-link meeting/session
-  const meetingKey = searchParams.get("meeting");
-  const sessionKey = searchParams.get("session");
-
-  useEffect(() => {
-    if (meetingKey && meetings.length > 0) {
-      const mk = Number(meetingKey);
-      const foundMeeting = meetings.find((m) => m.meeting_key === mk);
-      if (foundMeeting) setSelectedMeeting(foundMeeting);
-    }
-  }, [meetingKey, meetings]);
-
   const handleSelectMeeting = useCallback(
     (meeting: Meeting) => {
-      setSelectedMeeting(meeting);
       const params = new URLSearchParams(searchParams);
       params.set("meeting", String(meeting.meeting_key));
       params.delete("session");
@@ -73,7 +77,6 @@ export default function HistoricalBrowser() {
   );
 
   const handleBack = useCallback(() => {
-    setSelectedMeeting(null);
     const params = new URLSearchParams(searchParams);
     params.delete("meeting");
     params.delete("session");
@@ -95,7 +98,6 @@ export default function HistoricalBrowser() {
       params.set("year", String(y));
       params.delete("meeting");
       params.delete("session");
-      setSelectedMeeting(null);
       setSearchParams(params, { replace: true });
     },
     [searchParams, setSearchParams],
@@ -111,7 +113,6 @@ export default function HistoricalBrowser() {
       }
       params.delete("meeting");
       params.delete("session");
-      setSelectedMeeting(null);
       setSearchParams(params, { replace: true });
     },
     [searchParams, setSearchParams],
@@ -134,7 +135,7 @@ export default function HistoricalBrowser() {
   const years = Array.from({ length: currentYear - 2022 }, (_, i) => 2023 + i).toReversed();
 
   return (
-    <DashboardLayout session={session} activeView="historical">
+    <DashboardLayout session={null} activeView="historical">
       <Panel bodyClassName="px-3 py-2">
         <div className="flex items-center flex-wrap gap-2.5">
           <select

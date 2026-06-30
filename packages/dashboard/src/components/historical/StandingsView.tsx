@@ -30,12 +30,10 @@ interface DriverInfo {
 }
 
 const POINTS_SYSTEM = [25, 18, 15, 12, 10, 8, 6, 4, 2, 1];
-const BATCH_SIZE = 5;
 
 function calcPoints(position: number | null): number {
   if (position == null) return 0;
-  const base = POINTS_SYSTEM[position - 1] || 0;
-  return base;
+  return POINTS_SYSTEM[position - 1] || 0;
 }
 
 type ResultKind = "race" | "sprint";
@@ -48,6 +46,15 @@ type LoadResult = {
   results: StandingResult[];
   drivers: Map<number, DriverInfo>;
 } | null;
+
+interface StandingsDataState {
+  cacheKey: string | null;
+  results: Record<number, StandingResult[]>;
+  drivers: Map<number, DriverInfo>;
+}
+
+const EMPTY_RESULTS_BY_MEETING: Record<number, StandingResult[]> = {};
+const EMPTY_DRIVER_LOOKUP = new Map<number, DriverInfo>();
 
 async function loadMeeting(mk: number): Promise<LoadResult> {
   try {
@@ -104,16 +111,49 @@ async function loadMeeting(mk: number): Promise<LoadResult> {
   }
 }
 
+function addStandingResult(
+  driverPoints: Map<number, PointsEntry>,
+  result: StandingResult,
+  driverLookup: Map<number, DriverInfo>,
+  includeZeroPointEntries: boolean,
+) {
+  if (result.position == null) return;
+
+  const points = result.points ?? calcPoints(result.position);
+  if (!includeZeroPointEntries && points === 0 && result.points == null) return;
+
+  const existing = driverPoints.get(result.driver_number);
+  if (existing) {
+    existing.points += points;
+    if (result.position === 1) {
+      if (result.resultKind === "sprint") existing.sprintWins++;
+      else existing.raceWins++;
+    }
+    return;
+  }
+
+  const driver = driverLookup.get(result.driver_number);
+  driverPoints.set(result.driver_number, {
+    driver_number: result.driver_number,
+    broadcast_name: driver?.broadcast_name ?? `Driver #${result.driver_number}`,
+    full_name: driver?.full_name ?? `Driver #${result.driver_number}`,
+    team_name: driver?.team_name ?? "",
+    team_colour: driver?.team_colour ?? "",
+    country_code: driver?.country_code ?? "",
+    points,
+    raceWins: result.position === 1 && result.resultKind === "race" ? 1 : 0,
+    sprintWins: result.position === 1 && result.resultKind === "sprint" ? 1 : 0,
+  });
+}
+
 export default function StandingsView({ meetings, year: _year }: StandingsViewProps) {
-  const [resultsByMeeting, setResultsByMeeting] = useState<Record<number, StandingResult[]>>({});
-  const [loading, setLoading] = useState(true);
+  const [dataState, setDataState] = useState<StandingsDataState>(() => ({
+    cacheKey: null,
+    results: EMPTY_RESULTS_BY_MEETING,
+    drivers: EMPTY_DRIVER_LOOKUP,
+  }));
   const [selectedMeeting, setSelectedMeeting] = useState<number | "all">("all");
-  const [driverLookup, setDriverLookup] = useState<Map<number, DriverInfo>>(new Map());
-  const dataCache = useRef<{
-    key: string;
-    results: Record<number, StandingResult[]>;
-    drivers: Map<number, DriverInfo>;
-  } | null>(null);
+  const dataCache = useRef<StandingsDataState | null>(null);
 
   const handleMeetingChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedMeeting(e.target.value === "all" ? "all" : Number(e.target.value));
@@ -127,20 +167,30 @@ export default function StandingsView({ meetings, year: _year }: StandingsViewPr
       ),
     [meetings],
   );
+  const raceMeetings = useMemo(
+    () => sortedMeetings.filter((m) => new Date(m.date_end).getTime() < Date.now()),
+    [sortedMeetings],
+  );
+  const cacheKey = useMemo(
+    () => raceMeetings.map((m) => `${m.meeting_key}:${m.date_end}`).join("|"),
+    [raceMeetings],
+  );
+  const cachedData = dataCache.current?.cacheKey === cacheKey ? dataCache.current : null;
+  const activeData = dataState.cacheKey === cacheKey ? dataState : cachedData;
+  const loading = !activeData;
+  const resultsByMeeting = activeData?.results ?? EMPTY_RESULTS_BY_MEETING;
+  const driverLookup = activeData?.drivers ?? EMPTY_DRIVER_LOOKUP;
+  const effectiveSelectedMeeting =
+    selectedMeeting === "all" || raceMeetings.some((m) => m.meeting_key === selectedMeeting)
+      ? selectedMeeting
+      : "all";
 
   // Load race results + driver info for all meetings (parallel + cached)
   useEffect(() => {
     let mounted = true;
-    setLoading(true);
-
-    const raceMeetings = sortedMeetings.filter((m) => new Date(m.date_end).getTime() < Date.now());
-    const cacheKey = raceMeetings.map((m) => `${m.meeting_key}:${m.date_end}`).join("|");
 
     // Restore from cache if the meeting set hasn't changed
-    if (dataCache.current?.key === cacheKey) {
-      setResultsByMeeting(dataCache.current.results);
-      setDriverLookup(dataCache.current.drivers);
-      setLoading(false);
+    if (dataCache.current?.cacheKey === cacheKey) {
       return;
     }
 
@@ -148,27 +198,21 @@ export default function StandingsView({ meetings, year: _year }: StandingsViewPr
       const results: Record<number, StandingResult[]> = {};
       const driverCache = new Map<number, DriverInfo>();
 
-      // Load meetings in parallel batches
-      // eslint-disable-next-line no-await-in-loop
-      for (let i = 0; i < raceMeetings.length; i += BATCH_SIZE) {
-        const batch = raceMeetings.slice(i, i + BATCH_SIZE);
-        // eslint-disable-next-line no-await-in-loop
-        const entries = await Promise.all(batch.map((m) => loadMeeting(m.meeting_key)));
+      const entries = await Promise.all(raceMeetings.map((m) => loadMeeting(m.meeting_key)));
 
-        for (let j = 0; j < batch.length; j++) {
-          const entry = entries[j];
-          if (!entry) continue;
-          const mk = batch[j].meeting_key;
-          results[mk] = entry.results;
-          for (const [dn, di] of entry.drivers) {
-            if (!driverCache.has(dn)) driverCache.set(dn, di);
-          }
+      for (let i = 0; i < raceMeetings.length; i++) {
+        const entry = entries[i];
+        if (!entry) continue;
+        const mk = raceMeetings[i].meeting_key;
+        results[mk] = entry.results;
+        for (const [dn, di] of entry.drivers) {
+          if (!driverCache.has(dn)) driverCache.set(dn, di);
         }
       }
 
       // Fallback: if per-session driver data is sparse, fetch all drivers from the API
       // (F1 driver numbers are career-long, so numbers are stable across seasons)
-      if (driverCache.size < 10) {
+      if (raceMeetings.length > 0 && driverCache.size < 10) {
         try {
           const allDrivers = await getDrivers();
           for (const d of allDrivers) {
@@ -189,10 +233,9 @@ export default function StandingsView({ meetings, year: _year }: StandingsViewPr
       }
 
       if (mounted) {
-        dataCache.current = { key: cacheKey, results, drivers: driverCache };
-        setResultsByMeeting(results);
-        setDriverLookup(driverCache);
-        setLoading(false);
+        const nextState = { cacheKey, results, drivers: driverCache };
+        dataCache.current = nextState;
+        setDataState(nextState);
       }
     };
 
@@ -200,127 +243,43 @@ export default function StandingsView({ meetings, year: _year }: StandingsViewPr
     return () => {
       mounted = false;
     };
-  }, [sortedMeetings]);
+  }, [cacheKey, raceMeetings]);
 
   // Calculate standings
   const standings = useMemo(() => {
     const driverPoints = new Map<number, PointsEntry>();
+    const now = Date.now();
+    const includeZeroPointEntries = effectiveSelectedMeeting !== "all";
 
-    const meetingsToInclude =
-      selectedMeeting === "all"
-        ? sortedMeetings
-        : sortedMeetings.filter(
-            (m) =>
-              new Date(m.date_start).getTime() <=
-              new Date(
-                sortedMeetings.find((sm) => sm.meeting_key === selectedMeeting)?.date_end || "",
-              ).getTime(),
-          );
+    for (const meeting of sortedMeetings) {
+      if (new Date(meeting.date_end).getTime() >= now) continue;
 
-    // Only include completed meetings up to selected point
-    const completedMks = new Set(
-      meetingsToInclude
-        .filter((m) => new Date(m.date_end).getTime() < Date.now())
-        .map((m) => m.meeting_key),
-    );
-
-    for (const [mk, results] of Object.entries(resultsByMeeting)) {
-      const meetingKey = Number(mk);
-      if (!completedMks.has(meetingKey)) continue;
-      if (
-        selectedMeeting !== "all" &&
-        meetingKey !== selectedMeeting &&
-        !meetingsToInclude.some((m) => m.meeting_key === meetingKey)
-      )
-        continue;
-
-      // Only include the last meeting up to selected
-      if (selectedMeeting !== "all" && meetingKey !== selectedMeeting) continue;
-
-      for (const r of results) {
-        if (r.position == null) continue;
-        const pts = calcPoints(r.position);
-        if (pts === 0 && r.points == null) continue;
-
-        const existing = driverPoints.get(r.driver_number);
-        if (existing) {
-          existing.points += r.points ?? pts;
-          if (r.position === 1) {
-            if (r.resultKind === "sprint") existing.sprintWins++;
-            else existing.raceWins++;
-          }
-        } else {
-          const di = driverLookup.get(r.driver_number);
-          driverPoints.set(r.driver_number, {
-            driver_number: r.driver_number,
-            broadcast_name: di?.broadcast_name ?? `Driver #${r.driver_number}`,
-            full_name: di?.full_name ?? `Driver #${r.driver_number}`,
-            team_name: di?.team_name ?? "",
-            team_colour: di?.team_colour ?? "",
-            country_code: di?.country_code ?? "",
-            points: r.points ?? pts,
-            raceWins: r.position === 1 && r.resultKind === "race" ? 1 : 0,
-            sprintWins: r.position === 1 && r.resultKind === "sprint" ? 1 : 0,
-          });
+      const results = resultsByMeeting[meeting.meeting_key];
+      if (results) {
+        for (const result of results) {
+          addStandingResult(driverPoints, result, driverLookup, includeZeroPointEntries);
         }
       }
-    }
 
-    // But if selectedMeeting is a specific meeting, calculate points up to and including that meeting
-    if (selectedMeeting !== "all") {
-      // Recalculate properly
-      driverPoints.clear();
-      for (const m of sortedMeetings) {
-        if (new Date(m.date_end).getTime() >= new Date().getTime()) continue; // skip future
-        const results = resultsByMeeting[m.meeting_key];
-        if (!results) continue;
-        for (const r of results) {
-          if (r.position == null) continue;
-          const existing = driverPoints.get(r.driver_number);
-          const pts = r.points ?? calcPoints(r.position);
-          if (existing) {
-            existing.points += pts;
-            if (r.position === 1) {
-              if (r.resultKind === "sprint") existing.sprintWins++;
-              else existing.raceWins++;
-            }
-          } else {
-            const di = driverLookup.get(r.driver_number);
-            driverPoints.set(r.driver_number, {
-              driver_number: r.driver_number,
-              broadcast_name: di?.broadcast_name ?? `Driver #${r.driver_number}`,
-              full_name: di?.full_name ?? `Driver #${r.driver_number}`,
-              team_name: di?.team_name ?? "",
-              team_colour: di?.team_colour ?? "",
-              country_code: di?.country_code ?? "",
-              points: pts,
-              raceWins: r.position === 1 && r.resultKind === "race" ? 1 : 0,
-              sprintWins: r.position === 1 && r.resultKind === "sprint" ? 1 : 0,
-            });
-          }
-        }
-        if (m.meeting_key === selectedMeeting) break;
-      }
+      if (meeting.meeting_key === effectiveSelectedMeeting) break;
     }
 
     return [...driverPoints.values()].toSorted((a, b) => b.points - a.points);
-  }, [resultsByMeeting, sortedMeetings, selectedMeeting, driverLookup]);
+  }, [resultsByMeeting, sortedMeetings, effectiveSelectedMeeting, driverLookup]);
 
   if (loading) {
     return <div className="text-center py-10 text-f1-dim text-sm">Loading standings...</div>;
   }
 
   // Use the actual completed meetings for the selector
-  const completedMeetings = sortedMeetings.filter(
-    (m) => new Date(m.date_end).getTime() < Date.now(),
-  );
+  const completedMeetings = raceMeetings;
 
   return (
     <div>
       <div className="bg-f1-bg2 border border-f1-border rounded-lg p-4 mb-3 flex flex-wrap items-center gap-3">
         <span className="text-xs font-semibold text-f1-bright">Standings as of:</span>
         <select
-          value={selectedMeeting === "all" ? "all" : String(selectedMeeting)}
+          value={effectiveSelectedMeeting === "all" ? "all" : String(effectiveSelectedMeeting)}
           onChange={handleMeetingChange}
           className="bg-f1-bg3 border border-f1-border rounded-md px-2.5 py-1.5 text-f1-bright text-xs font-semibold cursor-pointer outline-none focus:border-f1-red font-mono"
         >
