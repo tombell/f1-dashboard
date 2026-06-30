@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import { getLaps, getDrivers } from "@/shared/api/openf1";
 import Panel from "@/shared/components/Panel";
 import type { Lap, Driver } from "@/shared/types/api";
+import { summarizeLaps } from "@/shared/utils/laps";
 
 interface PracticeTimingProps {
   sessionKey: number;
@@ -54,57 +55,21 @@ export default function PracticeTiming({ sessionKey, sessionType }: PracticeTimi
       driverMap.set(d.driver_number, d);
     }
 
-    const driverLaps = new Map<number, Lap[]>();
-    for (const lap of laps) {
-      if (!driverLaps.has(lap.driver_number)) {
-        driverLaps.set(lap.driver_number, []);
-      }
-      driverLaps.get(lap.driver_number)!.push(lap);
-    }
-
     const result: DriverLapSummary[] = [];
 
-    for (const [dn, dl] of driverLaps) {
-      const cleanLaps = dl.filter((l) => l.lap_duration != null && !l.is_pit_out_lap);
-      const best = cleanLaps.reduce(
-        (b, l) => (l.lap_duration != null && l.lap_duration < b ? l.lap_duration : b),
-        Infinity,
-      );
-
-      // Best sector times across all laps (not necessarily from same lap)
-      const bestS1 = cleanLaps.reduce(
-        (b, l) =>
-          l.duration_sector_1 != null && l.duration_sector_1 < b ? l.duration_sector_1 : b,
-        Infinity,
-      );
-      const bestS2 = cleanLaps.reduce(
-        (b, l) =>
-          l.duration_sector_2 != null && l.duration_sector_2 < b ? l.duration_sector_2 : b,
-        Infinity,
-      );
-      const bestS3 = cleanLaps.reduce(
-        (b, l) =>
-          l.duration_sector_3 != null && l.duration_sector_3 < b ? l.duration_sector_3 : b,
-        Infinity,
-      );
-
-      const topSpeed = Math.max(
-        ...dl.flatMap((l) => [l.st_speed ?? 0, l.i1_speed ?? 0, l.i2_speed ?? 0]),
-        0,
-      );
-
+    for (const [dn, lapSummary] of summarizeLaps(laps).drivers) {
       const driver = driverMap.get(dn);
       result.push({
         driver_number: dn,
         name_acronym: driver?.name_acronym ?? `#${dn}`,
         team_name: driver?.team_name ?? "",
         team_colour: driver?.team_colour ?? "#666",
-        totalLaps: cleanLaps.length,
-        bestLap: best !== Infinity ? best : null,
-        bestS1: bestS1 !== Infinity ? bestS1 : null,
-        bestS2: bestS2 !== Infinity ? bestS2 : null,
-        bestS3: bestS3 !== Infinity ? bestS3 : null,
-        topSpeed: topSpeed > 0 ? topSpeed : null,
+        totalLaps: lapSummary.cleanLaps,
+        bestLap: lapSummary.bestLap,
+        bestS1: lapSummary.bestS1,
+        bestS2: lapSummary.bestS2,
+        bestS3: lapSummary.bestS3,
+        topSpeed: lapSummary.topSpeed,
       });
     }
 

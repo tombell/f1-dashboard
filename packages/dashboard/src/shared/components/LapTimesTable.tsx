@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import type { Lap } from "@/shared/types/api";
+import { summarizeLaps } from "@/shared/utils/laps";
 
 import DriverCell from "./DriverCell";
 import LiveSection from "./LiveSection";
@@ -22,45 +23,12 @@ export default function LapTimesTable({
   onToggle,
 }: LapTimesTableProps) {
   const summaries = useMemo(() => {
-    const driverLaps = new Map<number, Lap[]>();
-    for (const lap of laps) {
-      if (!driverLaps.has(lap.driver_number)) {
-        driverLaps.set(lap.driver_number, []);
-      }
-      driverLaps.get(lap.driver_number)!.push(lap);
-    }
-
-    return [...driverLaps.entries()]
-      .map(([dn, dl]) => {
-        const cleanLaps = dl.filter((l) => l.lap_duration != null && !l.is_pit_out_lap);
-        const fastest = cleanLaps.reduce(
-          (best, l) => (l.lap_duration != null && l.lap_duration < best ? l.lap_duration : best),
-          Infinity,
-        );
-        const avg =
-          cleanLaps.length > 0
-            ? cleanLaps.reduce((s, l) => s + (l.lap_duration ?? 0), 0) / cleanLaps.length
-            : 0;
-        const topSpeed = Math.max(
-          ...dl.flatMap((l) => [l.st_speed ?? 0, l.i1_speed ?? 0, l.i2_speed ?? 0]),
-          0,
-        );
-        return {
-          driver_number: dn,
-          fastest: fastest !== Infinity ? fastest : null,
-          average: avg || null,
-          cleanCount: cleanLaps.length,
-          totalLaps: dl.length,
-          topSpeed: topSpeed > 0 ? topSpeed : null,
-        };
-      })
-      .toSorted((a, b) => {
-        // Fastest lap ascending — nulls (no clean lap) at the bottom
-        if (a.fastest === null && b.fastest === null) return 0;
-        if (a.fastest === null) return 1;
-        if (b.fastest === null) return -1;
-        return a.fastest - b.fastest;
-      });
+    return [...summarizeLaps(laps).drivers.values()].toSorted((a, b) => {
+      if (a.bestLap === null && b.bestLap === null) return 0;
+      if (a.bestLap === null) return 1;
+      if (b.bestLap === null) return -1;
+      return a.bestLap - b.bestLap;
+    });
   }, [laps]);
 
   if (laps.length === 0) return null;
@@ -81,19 +49,19 @@ export default function LapTimesTable({
         <tbody>
           {summaries.map((ls) => (
             <tr
-              key={ls.driver_number}
+              key={ls.driverNumber}
               className="border-b border-f1-border last:border-b-0 hover:bg-f1-bg3"
             >
               <td className="px-3 py-2 text-xs font-semibold text-f1-bright">
-                <DriverCell driverNumber={ls.driver_number} driverMap={driverMap} />
+                <DriverCell driverNumber={ls.driverNumber} driverMap={driverMap} />
               </td>
               <td className="px-3 py-2 text-xs text-f1-green tabular-nums">
-                {ls.fastest ? `${ls.fastest.toFixed(3)}s` : "-"}
+                {ls.bestLap != null ? `${ls.bestLap.toFixed(3)}s` : "-"}
               </td>
               <td className="px-3 py-2 text-xs text-f1-dim tabular-nums">
-                {ls.average ? `${ls.average.toFixed(3)}s` : "-"}
+                {ls.averageLap != null ? `${ls.averageLap.toFixed(3)}s` : "-"}
               </td>
-              <td className="px-3 py-2 text-xs text-f1-dim">{ls.cleanCount}</td>
+              <td className="px-3 py-2 text-xs text-f1-dim">{ls.cleanLaps}</td>
               <td className="px-3 py-2 text-xs text-f1-dim">{ls.totalLaps}</td>
               <td className="px-3 py-2 text-xs text-f1-blue tabular-nums">
                 {ls.topSpeed ? `${ls.topSpeed} km/h` : "-"}

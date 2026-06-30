@@ -1,7 +1,8 @@
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 
 import Panel from "@/shared/components/Panel";
 import type { Session, Driver, Position, Interval } from "@/shared/types/api";
+import type { DriverLapSummary } from "@/shared/utils/laps";
 
 interface TimingTowerProps {
   session: Session | null;
@@ -14,7 +15,7 @@ interface TimingTowerProps {
   currentTyres: Map<number, string>;
   retiredDrivers: Set<number>;
   driverPenalties: Map<number, string[]>;
-  driverLaps: Map<number, { laps: number; bestLap: number | null }>;
+  driverLaps: Map<number, DriverLapSummary>;
 }
 
 const TYRE_COLORS: Record<string, string> = {
@@ -142,22 +143,11 @@ export default function TimingTower({
   const fastestSessionLap = useMemo(() => {
     if (!isLapTimingSession) return null;
     let best = Infinity;
-    for (const [, info] of driverLaps) {
+    for (const info of driverLaps.values()) {
       if (info.bestLap != null && info.bestLap < best) best = info.bestLap;
     }
     return best !== Infinity ? best : null;
   }, [isLapTimingSession, driverLaps]);
-
-  // Convert gap_to_leader to a numeric sort key for when position data is unavailable
-  const gapSortKey = useCallback(
-    (dn: number): number => {
-      const iv = intervalMap.get(dn);
-      const gtl = iv?.gap_to_leader;
-      if (gtl == null) return 999;
-      return gtl;
-    },
-    [intervalMap],
-  );
 
   // Sort drivers by position. In practice/qualifying, cars regularly sit in the garage;
   // don't treat stale timing data as retired/OUT.
@@ -174,6 +164,7 @@ export default function TimingTower({
 
     const active = drivers.filter((d) => !retiredDrivers.has(d.driver_number));
     const retired = drivers.filter((d) => retiredDrivers.has(d.driver_number));
+    const gapSortKey = (dn: number): number => intervalMap.get(dn)?.gap_to_leader ?? 999;
     const sortByPosition = (a: Driver, b: Driver) => {
       const pa = positions.get(a.driver_number)?.position;
       const pb = positions.get(b.driver_number)?.position;
@@ -187,7 +178,7 @@ export default function TimingTower({
     };
 
     return [...active.toSorted(sortByPosition), ...retired.toSorted(sortByPosition)];
-  }, [drivers, positions, retiredDrivers, isLapTimingSession, driverLaps, gapSortKey]);
+  }, [drivers, positions, retiredDrivers, isLapTimingSession, driverLaps, intervalMap]);
 
   if (!session) {
     return (
@@ -237,6 +228,7 @@ export default function TimingTower({
           const change = positionChanges.get(driver.driver_number);
           const changeClass =
             change === "up" ? "animate-pos-up" : change === "down" ? "animate-pos-down" : "";
+          const lapInfo = driverLaps.get(driver.driver_number);
 
           return (
             <div
@@ -249,10 +241,7 @@ export default function TimingTower({
               {isLapTimingSession ? (
                 <>
                   <span className="w-[30px] font-bold text-f1-bright tabular-nums">
-                    {(() => {
-                      const dl = driverLaps.get(driver.driver_number);
-                      return dl?.laps ?? "—";
-                    })()}
+                    {lapInfo?.cleanLaps ?? "—"}
                   </span>
                   <span className="flex-1 flex items-center gap-2">
                     <span className="font-semibold text-f1-bright">{driver.name_acronym}</span>
@@ -274,20 +263,14 @@ export default function TimingTower({
                     )}
                   </span>
                   <span className="w-[80px] text-right text-f1-green tabular-nums font-medium">
-                    {(() => {
-                      const dl = driverLaps.get(driver.driver_number);
-                      return dl?.bestLap != null ? `${dl.bestLap.toFixed(3)}` : "—";
-                    })()}
+                    {lapInfo?.bestLap != null ? `${lapInfo.bestLap.toFixed(3)}` : "—"}
                   </span>
                   <span className="w-[50px] text-right text-f1-orange tabular-nums">
-                    {(() => {
-                      const dl = driverLaps.get(driver.driver_number);
-                      if (dl?.bestLap != null && fastestSessionLap != null) {
-                        const gap = dl.bestLap - fastestSessionLap;
-                        return gap > 0 ? `+${gap.toFixed(3)}` : "—";
-                      }
-                      return "—";
-                    })()}
+                    {lapInfo?.bestLap != null && fastestSessionLap != null
+                      ? lapInfo.bestLap > fastestSessionLap
+                        ? `+${(lapInfo.bestLap - fastestSessionLap).toFixed(3)}`
+                        : "—"
+                      : "—"}
                   </span>
                 </>
               ) : (

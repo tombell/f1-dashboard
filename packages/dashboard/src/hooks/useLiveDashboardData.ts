@@ -2,27 +2,27 @@ import { useEffect, useMemo, useState } from "react";
 
 import {
   getDrivers,
-  getPositions,
   getIntervals,
-  getWeather,
-  getPitStops,
-  getStints,
-  getRaceControl,
   getLaps,
+  getPitStops,
+  getPositions,
+  getRaceControl,
+  getStints,
+  getWeather,
 } from "@/shared/api/openf1";
 import type {
   Driver,
-  Position,
   Interval,
-  WeatherReading,
-  Stint,
   Lap,
+  Position,
   RaceControlMessage,
   Session,
+  Stint,
+  WeatherReading,
 } from "@/shared/types/api";
+import { summarizeLaps } from "@/shared/utils/laps";
 
 import { useDriverFallback } from "./useDriverFallback";
-import { useFastestLap } from "./useFastestLap";
 import { usePenalties } from "./usePenalties";
 import { usePitDetection } from "./usePitDetection";
 import { usePositionChanges } from "./usePositionChanges";
@@ -40,12 +40,11 @@ export function useLiveDashboardData(session: Session | null) {
   const [laps, setLaps] = useState<Lap[]>([]);
 
   const { enrichDrivers } = useDriverFallback();
-  const { processLaps, fastestLapDriver, setFastestLapDriver, currentLap, setCurrentLap } =
-    useFastestLap();
   const { positionChanges, detectChanges } = usePositionChanges();
   const { recentPits, detectPits } = usePitDetection();
   const { retiredDrivers, detectRetirements } = useRetirements();
-  const currentTyres = useTyres(stints, currentLap);
+  const lapSummary = useMemo(() => summarizeLaps(laps), [laps]);
+  const currentTyres = useTyres(stints, lapSummary.currentLap);
   const driverPenalties = usePenalties(rc);
 
   useEffect(() => {
@@ -78,10 +77,7 @@ export function useLiveDashboardData(session: Session | null) {
         setRc(rcData);
         setError(null);
 
-        const { fastestLapDriver: flDriver, currentLap: cl } = processLaps(lapsData);
         setLaps(lapsData);
-        if (flDriver !== null) setFastestLapDriver(flDriver);
-        if (cl > 0) setCurrentLap(cl);
 
         detectChanges(p);
         detectPits(pits);
@@ -98,16 +94,7 @@ export function useLiveDashboardData(session: Session | null) {
       mounted = false;
       clearInterval(interval);
     };
-  }, [
-    session,
-    enrichDrivers,
-    processLaps,
-    setFastestLapDriver,
-    setCurrentLap,
-    detectChanges,
-    detectPits,
-    detectRetirements,
-  ]);
+  }, [session, enrichDrivers, detectChanges, detectPits, detectRetirements]);
 
   const latestWeather = weather.length > 0 ? weather[weather.length - 1] : null;
   const latestPositions = useMemo(() => {
@@ -126,38 +113,15 @@ export function useLiveDashboardData(session: Session | null) {
     return map;
   }, [drivers]);
 
-  const driverLaps = useMemo(() => {
-    const map = new Map<number, { laps: number; bestLap: number | null }>();
-    const byDriver = new Map<number, Lap[]>();
-    for (const lap of laps) {
-      if (!byDriver.has(lap.driver_number)) {
-        byDriver.set(lap.driver_number, []);
-      }
-      byDriver.get(lap.driver_number)!.push(lap);
-    }
-    for (const [dn, dl] of byDriver) {
-      const clean = dl.filter((l) => l.lap_duration != null && !l.is_pit_out_lap);
-      const best = clean.reduce(
-        (b, l) => (l.lap_duration != null && l.lap_duration < b ? l.lap_duration : b),
-        Infinity,
-      );
-      map.set(dn, {
-        laps: clean.length,
-        bestLap: best !== Infinity ? best : null,
-      });
-    }
-    return map;
-  }, [laps]);
-
   return {
-    currentLap,
+    currentLap: lapSummary.currentLap,
     currentTyres,
-    driverLaps,
+    driverLaps: lapSummary.drivers,
     driverNameMap,
     driverPenalties,
     drivers,
     error,
-    fastestLapDriver,
+    fastestLapDriver: lapSummary.fastestLapDriver,
     intervals,
     latestPositions,
     latestWeather,
