@@ -31,20 +31,6 @@ export function DashboardMark({ className = "h-5 w-5" }: IconProps) {
   );
 }
 
-export function FlagIcon({ className = "h-3.5 w-3.5" }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M4 13V3.5m0 .2c2.5-1.2 4.2.9 7-.3v5.7c-2.8 1.2-4.5-.9-7 .3"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 export function PlayIcon({ className = "h-3 w-3" }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -57,20 +43,6 @@ export function PauseIcon({ className = "h-3 w-3" }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
       <path d="M4.5 3.5h2.2v9H4.5v-9zm4.8 0h2.2v9H9.3v-9z" />
-    </svg>
-  );
-}
-
-export function TimerIcon({ className = "h-3.5 w-3.5" }: IconProps) {
-  return (
-    <svg className={className} viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path
-        d="M8 14a5 5 0 1 0 0-10 5 5 0 0 0 0 10zM6.5 1.8h3M8 6v2.6l1.8 1.1"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
     </svg>
   );
 }

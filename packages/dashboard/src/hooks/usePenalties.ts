@@ -2,9 +2,16 @@ import { useMemo } from "react";
 
 import type { RaceControlMessage } from "@/shared/types/api";
 
+const CAR_MESSAGE_RE = /CAR\s+(\d+)/;
+const UNDER_INVESTIGATION_RE = /UNDER INVESTIGATION/;
+const NO_FURTHER_ACTION_RE = /NO FURTHER ACTION|NO FURTHER INVESTIGATION/;
+const PENALTY_RE = /TIME PENALTY|DRIVE THROUGH PENALTY|STOP-GO PENALTY/;
+const PENALTY_SERVED_RE = /PENALTY SERVED/;
+const SERVED_RE = /SERVED/;
+
 const extractDriver = (entry: RaceControlMessage): number | null => {
   if (entry.driver_number) return entry.driver_number;
-  const match = (entry.message || "").match(/CAR\s+(\d+)/);
+  const match = CAR_MESSAGE_RE.exec(entry.message || "");
   return match ? parseInt(match[1]) : null;
 };
 
@@ -20,21 +27,18 @@ export function usePenalties(rc: RaceControlMessage[]) {
         if (!dn) continue;
         const msg = entry.message || "";
 
-        if (msg.includes("UNDER INVESTIGATION")) {
+        if (UNDER_INVESTIGATION_RE.test(msg)) {
           invCount.set(dn, (invCount.get(dn) || 0) + 1);
-        } else if (msg.includes("NO FURTHER ACTION") || msg.includes("NO FURTHER INVESTIGATION")) {
+        } else if (NO_FURTHER_ACTION_RE.test(msg)) {
           invCount.set(dn, (invCount.get(dn) || 0) - 1);
         }
 
-        const isPenalty =
-          msg.includes("TIME PENALTY") ||
-          msg.includes("DRIVE THROUGH PENALTY") ||
-          msg.includes("STOP-GO PENALTY");
-        if (isPenalty && !msg.includes("SERVED") && !msg.includes("PENALTY SERVED")) {
+        const isPenalty = PENALTY_RE.test(msg);
+        if (isPenalty && !SERVED_RE.test(msg) && !PENALTY_SERVED_RE.test(msg)) {
           penCount.set(dn, (penCount.get(dn) || 0) + 1);
           invCount.set(dn, (invCount.get(dn) || 0) - 1);
         }
-        if (msg.includes("PENALTY SERVED")) {
+        if (PENALTY_SERVED_RE.test(msg)) {
           penCount.set(dn, (penCount.get(dn) || 0) - 1);
         }
       }

@@ -55,15 +55,14 @@ export default function TeamRadio({ sessionKey, drivers }: TeamRadioProps) {
     [playingUrl],
   );
 
-  // Clean up audio on unmount
   useEffect(() => {
+    const audio = audioRef.current;
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
+      if (audio) {
+        audio.pause();
       }
     };
-  }, []);
+  }, [playingUrl]);
 
   // Poll for radio data
   useEffect(() => {
@@ -123,6 +122,7 @@ export default function TeamRadio({ sessionKey, drivers }: TeamRadioProps) {
             className="flex items-center gap-2 px-3 py-1.5 text-xs border-b border-f1-border last:border-b-0 hover:bg-f1-bg3/30 transition-colors"
           >
             <button
+              type="button"
               onClick={handlePlay}
               data-url={entry.recording_url}
               className="w-6 h-6 flex items-center justify-center rounded bg-f1-bg3 hover:bg-f1-blue/30 text-f1-dim hover:text-f1-blue transition-colors shrink-0"

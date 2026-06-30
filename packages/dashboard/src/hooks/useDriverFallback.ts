@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo } from "react";
 
 import { getDrivers } from "@/shared/api/openf1";
 import type { Driver } from "@/shared/types/api";
@@ -15,7 +15,7 @@ interface DriverInfo {
  * Returns the enriched driver list and a driver map keyed by driver_number.
  */
 export function useDriverFallback() {
-  const cache = useRef<Map<number, Map<number, DriverInfo>>>(new Map());
+  const cache = useMemo(() => new Map<number, Map<number, DriverInfo>>(), []);
 
   const enrichDrivers = useCallback(
     async (
@@ -36,7 +36,7 @@ export function useDriverFallback() {
 
       // Enrich with meeting-scoped fallback if per-session data is sparse
       if (nameMap.size < 10 && meetingKey) {
-        let meetingCache = cache.current.get(meetingKey);
+        let meetingCache = cache.get(meetingKey);
         if (!meetingCache) {
           try {
             const meetingDrivers = await getDrivers(undefined, meetingKey);
@@ -51,7 +51,7 @@ export function useDriverFallback() {
                 });
               }
             }
-            cache.current.set(meetingKey, meetingCache);
+            cache.set(meetingKey, meetingCache);
           } catch {
             // fallback failed
           }
@@ -81,7 +81,7 @@ export function useDriverFallback() {
 
       return { drivers: enriched, driverMap: nameMap };
     },
-    [],
+    [cache],
   );
 
   return { enrichDrivers };

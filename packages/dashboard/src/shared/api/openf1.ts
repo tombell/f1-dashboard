@@ -12,9 +12,11 @@ async function fetchJson<T>(url: string): Promise<T> {
 }
 
 function buildQuery(params: Record<string, string | number | undefined | null>): string {
-  const parts = Object.entries(params)
-    .filter(([_, v]) => v !== undefined && v !== null && v !== "")
-    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`);
+  const parts: string[] = [];
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null || value === "") continue;
+    parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+  }
   return parts.length ? `?${parts.join("&")}` : "";
 }
 
@@ -30,7 +32,7 @@ export async function getSessions(meetingKey?: number, year?: number) {
   return fetchJson<import("@/shared/types/api").Session[]>(`/sessions${q}`);
 }
 
-export async function getLatestSession() {
+async function getLatestSession() {
   const results = await fetchJson<import("@/shared/types/api").Session[]>(
     "/sessions?session_key=latest",
   );

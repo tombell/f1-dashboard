@@ -1,23 +1,14 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 
 import {
+  getDrivers,
   getLaps,
   getPitStops,
+  getPositions,
   getStints,
   getWeather,
-  getRaceControl,
-  getPositions,
-  getDrivers,
 } from "@/shared/api/openf1";
-import type {
-  Lap,
-  PitStop,
-  Stint,
-  WeatherReading,
-  RaceControlMessage,
-  Position,
-  Driver,
-} from "@/shared/types/api";
+import type { Driver, Lap, PitStop, Position, Stint, WeatherReading } from "@/shared/types/api";
 
 import LapTimesTable from "./LapTimesTable";
 import LiveSection from "./LiveSection";
@@ -34,36 +25,52 @@ interface LiveDataSectionsProps {
   sessionName?: string;
 }
 
+interface DriverDisplayInfo {
+  broadcast_name: string;
+  name_acronym: string;
+  team_name: string;
+  team_colour: string;
+}
+
+interface LiveDataState {
+  sessionKey: number | null;
+  laps: Lap[];
+  pits: PitStop[];
+  stints: Stint[];
+  weather: WeatherReading[];
+  positions: Position[];
+  driverMap: Map<number, DriverDisplayInfo>;
+}
+
+type DriverFallbackCache = Map<number, Map<number, DriverDisplayInfo>>;
+
+const EMPTY_DRIVER_MAP = new Map<number, DriverDisplayInfo>();
+const EMPTY_LIVE_DATA: LiveDataState = {
+  sessionKey: null,
+  laps: [],
+  pits: [],
+  stints: [],
+  weather: [],
+  positions: [],
+  driverMap: EMPTY_DRIVER_MAP,
+};
+
 export default function LiveDataSections({
   sessionKey,
   meetingKey,
   sessionName,
 }: LiveDataSectionsProps) {
-  const [laps, setLaps] = useState<Lap[]>([]);
-  const [pits, setPits] = useState<PitStop[]>([]);
-  const [stints, setStints] = useState<Stint[]>([]);
-  const [weather, setWeather] = useState<WeatherReading[]>([]);
-  const [_raceControl, setRaceControl] = useState<RaceControlMessage[]>([]);
-  const [positions, setPositions] = useState<Position[]>([]);
+  const [liveData, setLiveData] = useState<LiveDataState>(() => EMPTY_LIVE_DATA);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const [driverMap, setDriverMap] = useState<
-    Map<
-      number,
-      { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }
-    >
-  >(new Map());
-  const driverFallbackCache = useRef<
-    Map<
-      number,
-      Map<
-        number,
-        { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }
-      >
-    >
-  >(new Map());
+  const driverFallbackCache = useRef<DriverFallbackCache | null>(null);
+  if (driverFallbackCache.current === null) {
+    driverFallbackCache.current = new Map();
+  }
+  const currentLiveData = liveData.sessionKey === sessionKey ? liveData : EMPTY_LIVE_DATA;
+  const { laps, pits, stints, weather, positions, driverMap } = currentLiveData;
 
   const handleToggle = useCallback((k: string) => {
-    setCollapsed((c) => ({ ...c, [k]: !(c[k] ?? true) }));
+    setCollapsed((c) => ({ ...c, [k]: !c[k] }));
   }, []);
 
   useEffect(() => {
@@ -72,28 +79,17 @@ export default function LiveDataSections({
 
     const fetchLiveData = async () => {
       try {
-        const [l, p, s, w, rc, pos, drs] = await Promise.all([
+        const [l, p, s, w, pos, drs] = await Promise.all([
           getLaps(sessionKey).catch(() => []),
           getPitStops(sessionKey).catch(() => []),
           getStints(sessionKey).catch(() => []),
           getWeather(sessionKey).catch(() => []),
-          getRaceControl(sessionKey).catch(() => []),
           getPositions(sessionKey).catch(() => []),
           getDrivers(sessionKey).catch(() => [] as Driver[]),
         ]);
         if (!mounted) return;
-        setLaps(l);
-        setPits(p);
-        setStints(s);
-        setWeather(w);
-        setRaceControl(rc);
-        setPositions(pos);
-
         // Build driver name map
-        const nameMap = new Map<
-          number,
-          { broadcast_name: string; name_acronym: string; team_name: string; team_colour: string }
-        >();
+        const nameMap = new Map<number, DriverDisplayInfo>();
         for (const d of drs) {
           if (!nameMap.has(d.driver_number)) {
             nameMap.set(d.driver_number, {
@@ -111,7 +107,8 @@ export default function LiveDataSections({
           (info) => !info.team_name || !info.team_colour,
         );
         if ((nameMap.size < 10 || hasMissingTeamData) && meetingKey) {
-          let meetingCache = driverFallbackCache.current.get(meetingKey);
+          const fallbackCache = driverFallbackCache.current;
+          let meetingCache = fallbackCache?.get(meetingKey);
           if (!meetingCache) {
             try {
               const meetingDrivers = await getDrivers(undefined, meetingKey);
@@ -127,7 +124,7 @@ export default function LiveDataSections({
                   });
                 }
               }
-              driverFallbackCache.current.set(meetingKey, meetingCache);
+              fallbackCache?.set(meetingKey, meetingCache);
             } catch {
               // fallback failed
             }
@@ -147,7 +144,15 @@ export default function LiveDataSections({
           }
         }
 
-        setDriverMap(nameMap);
+        setLiveData({
+          sessionKey,
+          laps: l,
+          pits: p,
+          stints: s,
+          weather: w,
+          positions: pos,
+          driverMap: nameMap,
+        });
       } catch {
         // silent
       }
@@ -159,6 +164,13 @@ export default function LiveDataSections({
     };
   }, [sessionKey, meetingKey]);
 
+  const driverAcronymMap = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const [driverNumber, driver] of driverMap) {
+      map.set(driverNumber, driver.name_acronym);
+    }
+    return map;
+  }, [driverMap]);
   const dataAvailable =
     laps.length > 0 || pits.length > 0 || stints.length > 0 || weather.length > 0;
   if (!dataAvailable) return null;
@@ -166,7 +178,6 @@ export default function LiveDataSections({
   const hasWeather = weather.length > 0;
   const isRace = sessionName === "Race";
   const showsPositionChanges = sessionName === "Race" || sessionName === "Sprint";
-  const driverAcronymMap = new Map([...driverMap.entries()].map(([n, d]) => [n, d.name_acronym]));
 
   return (
     <div className="flex flex-col gap-3 mt-3">

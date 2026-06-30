@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo, useState } from "react";
+import { useCallback, useRef, useEffect, useMemo, useState } from "react";
 
 import { getLocation } from "@/shared/api/openf1";
 import type { Location, Driver, Session } from "@/shared/types/api";
@@ -10,6 +10,7 @@ interface TrackMapProps {
 
 type Point = { x: number; y: number };
 type Bounds = { minX: number; maxX: number; minY: number; maxY: number };
+type DriverPosition = { driverNumber: number; x: number; y: number };
 
 function getBounds(points: Point[]): Bounds | null {
   if (points.length === 0) return null;
@@ -99,24 +100,155 @@ async function getRecentLocations(sessionKey: number, since: string): Promise<Lo
   return response.json();
 }
 
+function buildDriverPositions(locations: Location[], bounds: Bounds | null): DriverPosition[] {
+  if (!bounds) return [];
+  const latest = new Map<number, Location>();
+  for (const loc of locations) {
+    const prev = latest.get(loc.driver_number);
+    if (!prev || loc.date > prev.date) latest.set(loc.driver_number, loc);
+  }
+  return [...latest.entries()].map(([driverNumber, loc]) => {
+    const point = normalisePoint({ x: loc.x, y: loc.y }, bounds);
+    return { driverNumber, x: point.x, y: point.y };
+  });
+}
+
+function drawTrackMap(
+  canvas: HTMLCanvasElement,
+  circuitPoints: Point[],
+  driverPositions: DriverPosition[],
+  driverMap: Map<number, Driver>,
+  loading: boolean,
+) {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const w = rect.width;
+  const h = rect.height;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+
+  if (circuitPoints.length < 50) {
+    ctx.fillStyle = "#666";
+    ctx.font = "13px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(loading ? "Loading track data..." : "Waiting for location data...", w / 2, h / 2);
+    return;
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(circuitPoints[0].x * w, circuitPoints[0].y * h);
+  for (let i = 1; i < circuitPoints.length; i++) {
+    ctx.lineTo(circuitPoints[i].x * w, circuitPoints[i].y * h);
+  }
+  ctx.strokeStyle = "rgba(255,255,255,0.22)";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  const sf = circuitPoints[0];
+  ctx.beginPath();
+  ctx.moveTo(sf.x * w - 8, sf.y * h);
+  ctx.lineTo(sf.x * w + 8, sf.y * h);
+  ctx.strokeStyle = "rgba(255,255,255,0.55)";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  for (const dp of driverPositions) {
+    const driver = driverMap.get(dp.driverNumber);
+    const colour = driver?.team_colour || "#888888";
+    const label = driver?.name_acronym || String(dp.driverNumber);
+    const px = dp.x * w;
+    const py = dp.y * h;
+
+    ctx.beginPath();
+    ctx.arc(px, py, 11, 0, Math.PI * 2);
+    ctx.fillStyle = `${colour}33`;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(px, py, 5, 0, Math.PI * 2);
+    ctx.fillStyle = colour;
+    ctx.fill();
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.font = "bold 9px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    ctx.strokeStyle = "rgba(0,0,0,0.75)";
+    ctx.lineWidth = 3;
+    ctx.strokeText(label, px, py - 9);
+    ctx.fillStyle = "#fff";
+    ctx.fillText(label, px, py - 9);
+  }
+}
+
 export default function TrackMap({ session, drivers }: TrackMapProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [circuitLocations, setCircuitLocations] = useState<Location[]>([]);
-  const [carLocations, setCarLocations] = useState<Location[]>([]);
-  const [loading, setLoading] = useState(false);
+  const circuitPointsRef = useRef<Point[]>([]);
+  const driverPositionsRef = useRef<DriverPosition[]>([]);
+  const loadingRef = useRef(false);
+  const [circuitPointCountState, setCircuitPointCountState] = useState<{
+    sessionKey: number | null;
+    count: number;
+  }>({ sessionKey: null, count: 0 });
+  const circuitPointCount =
+    session && circuitPointCountState.sessionKey === session.session_key
+      ? circuitPointCountState.count
+      : 0;
 
   const traceDriver = drivers[0]?.driver_number ?? 16;
+  const driverMap = useMemo(() => {
+    const map = new Map<number, Driver>();
+    for (const d of drivers) map.set(d.driver_number, d);
+    return map;
+  }, [drivers]);
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    drawTrackMap(
+      canvas,
+      circuitPointsRef.current,
+      driverPositionsRef.current,
+      driverMap,
+      loadingRef.current,
+    );
+  }, [driverMap]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!session) {
+      circuitPointsRef.current = [];
+      driverPositionsRef.current = [];
+      loadingRef.current = false;
+      draw();
+      return;
+    }
     let mounted = true;
+    circuitPointsRef.current = [];
+    driverPositionsRef.current = [];
+    loadingRef.current = true;
+    draw();
 
     const fetchData = async () => {
       try {
-        setLoading(true);
+        loadingRef.current = true;
+        draw();
         const trace = await getLocation(session.session_key, traceDriver);
         if (!mounted) return;
-        setCircuitLocations(trace);
+        const builtTrace = buildTrace(trace);
+        const bounds = getBounds(builtTrace);
+        const circuitPoints =
+          bounds && builtTrace.length >= 50 ? normalise(simplify(builtTrace, 0.005), bounds) : [];
+        circuitPointsRef.current = circuitPoints;
+        setCircuitPointCountState({
+          sessionKey: session.session_key,
+          count: circuitPoints.length,
+        });
 
         const latestTraceDate = trace.reduce((max, l) => (l.date > max ? l.date : max), "");
         const since = latestTraceDate
@@ -124,10 +256,13 @@ export default function TrackMap({ session, drivers }: TrackMapProps) {
           : minusSeconds(new Date().toISOString(), 30);
         const recent = await getRecentLocations(session.session_key, since);
         if (!mounted) return;
-        setCarLocations(recent);
-        setLoading(false);
+        driverPositionsRef.current = buildDriverPositions(recent, bounds);
+        loadingRef.current = false;
+        draw();
       } catch {
-        if (mounted) setLoading(false);
+        if (!mounted) return;
+        loadingRef.current = false;
+        draw();
       }
     };
 
@@ -137,111 +272,17 @@ export default function TrackMap({ session, drivers }: TrackMapProps) {
       mounted = false;
       clearInterval(interval);
     };
-  }, [session, traceDriver]);
-
-  const trace = useMemo(() => buildTrace(circuitLocations), [circuitLocations]);
-  const bounds = useMemo(() => getBounds(trace), [trace]);
-  const circuitPoints = useMemo(() => {
-    if (!bounds || trace.length < 50) return [];
-    return normalise(simplify(trace, 0.005), bounds);
-  }, [trace, bounds]);
-
-  const driverPositions = useMemo(() => {
-    if (!bounds) return [];
-    const latest = new Map<number, Location>();
-    for (const loc of carLocations) {
-      const prev = latest.get(loc.driver_number);
-      if (!prev || loc.date > prev.date) latest.set(loc.driver_number, loc);
-    }
-    return [...latest.entries()].map(([driverNumber, loc]) => {
-      const point = normalisePoint({ x: loc.x, y: loc.y }, bounds);
-      return { driverNumber, x: point.x, y: point.y };
-    });
-  }, [carLocations, bounds]);
-
-  const driverMap = useMemo(() => {
-    const map = new Map<number, Driver>();
-    for (const d of drivers) map.set(d.driver_number, d);
-    return map;
-  }, [drivers]);
+  }, [session, traceDriver, draw]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    const w = rect.width;
-    const h = rect.height;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, w, h);
-
-    if (circuitPoints.length < 50) {
-      ctx.fillStyle = "#666";
-      ctx.font = "13px system-ui, sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(loading ? "Loading track data…" : "Waiting for location data…", w / 2, h / 2);
-      return;
-    }
-
-    ctx.beginPath();
-    ctx.moveTo(circuitPoints[0].x * w, circuitPoints[0].y * h);
-    for (let i = 1; i < circuitPoints.length; i++) {
-      ctx.lineTo(circuitPoints[i].x * w, circuitPoints[i].y * h);
-    }
-    ctx.strokeStyle = "rgba(255,255,255,0.22)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    const sf = circuitPoints[0];
-    ctx.beginPath();
-    ctx.moveTo(sf.x * w - 8, sf.y * h);
-    ctx.lineTo(sf.x * w + 8, sf.y * h);
-    ctx.strokeStyle = "rgba(255,255,255,0.55)";
-    ctx.lineWidth = 3;
-    ctx.stroke();
-
-    for (const dp of driverPositions) {
-      const driver = driverMap.get(dp.driverNumber);
-      const colour = driver?.team_colour || "#888888";
-      const label = driver?.name_acronym || String(dp.driverNumber);
-      const px = dp.x * w;
-      const py = dp.y * h;
-
-      ctx.beginPath();
-      ctx.arc(px, py, 11, 0, Math.PI * 2);
-      ctx.fillStyle = `${colour}33`;
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.arc(px, py, 5, 0, Math.PI * 2);
-      ctx.fillStyle = colour;
-      ctx.fill();
-      ctx.strokeStyle = "#fff";
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      ctx.font = "bold 9px system-ui, sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "bottom";
-      ctx.strokeStyle = "rgba(0,0,0,0.75)";
-      ctx.lineWidth = 3;
-      ctx.strokeText(label, px, py - 9);
-      ctx.fillStyle = "#fff";
-      ctx.fillText(label, px, py - 9);
-    }
-  }, [circuitPoints, driverPositions, driverMap, loading]);
+    draw();
+  }, [draw]);
 
   return (
     <div className="relative bg-[#1a1a1e] rounded-lg overflow-hidden border border-white/5 min-h-[300px]">
       <canvas ref={canvasRef} className="w-full h-full min-h-[300px]" aria-label="Live track map" />
       <div className="absolute bottom-2 left-2 text-[10px] text-white/30 font-mono pointer-events-none select-none">
-        TRACK MAP ·{" "}
-        {circuitPoints.length > 50 ? `${circuitPoints.length} pts` : "acquiring circuit…"}
+        TRACK MAP · {circuitPointCount > 50 ? `${circuitPointCount} pts` : "acquiring circuit..."}
         {session?.circuit_short_name ? ` · ${session.circuit_short_name}` : ""}
       </div>
     </div>

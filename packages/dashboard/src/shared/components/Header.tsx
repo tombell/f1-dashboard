@@ -14,9 +14,8 @@ interface HeaderProps {
   historicalHref?: string;
 }
 
-function formatCountdown(dateStr: string): string {
+function formatCountdown(dateStr: string, now: number): string {
   const target = new Date(dateStr).getTime();
-  const now = Date.now();
   const diff = target - now;
   if (diff <= 0) return "LIVE";
   const m = Math.floor(diff / 60000);
@@ -37,23 +36,23 @@ export default function Header({
   historicalHref = "/historical/",
 }: HeaderProps) {
   const location = useLocation();
-  const [countdown, setCountdown] = useState("");
+  const [now, setNow] = useState(() => Date.now());
   const isHistorical = activeView
     ? activeView === "historical"
     : location.pathname.startsWith("/historical");
+  const sessionStart = session?.date_start;
 
   useEffect(() => {
-    if (!session || new Date(session.date_start).getTime() <= Date.now()) {
-      setCountdown("");
-      return;
-    }
-
-    setCountdown(formatCountdown(session.date_start));
-    const interval = setInterval(() => setCountdown(formatCountdown(session.date_start)), 1000);
+    if (!sessionStart || new Date(sessionStart).getTime() <= Date.now()) return;
+    const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
-  }, [session]);
+  }, [sessionStart]);
 
   const live = session ? isLive(session.date_start, session.date_end) : false;
+  const countdown =
+    session && new Date(session.date_start).getTime() > now
+      ? formatCountdown(session.date_start, now)
+      : "";
   const navItems = useMemo(
     () => [
       { value: "live" as const, label: "Live", href: liveHref },

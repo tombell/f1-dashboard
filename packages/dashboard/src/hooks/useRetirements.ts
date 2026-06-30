@@ -1,10 +1,10 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { STALE_RETIRE, STALE_ACTIVE } from "@/shared/constants/f1";
 import type { Driver, Interval, Position, RaceControlMessage, Stint } from "@/shared/types/api";
 
 export function useRetirements() {
-  const lastUpdateTimes = useRef<Map<number, number>>(new Map());
+  const lastUpdateTimes = useMemo(() => new Map<number, number>(), []);
   const [retiredDrivers, setRetiredDrivers] = useState<Set<number>>(new Set());
 
   const detectRetirements = useCallback(
@@ -19,9 +19,9 @@ export function useRetirements() {
       // race position changes; intervals update continuously while the car is running.
       for (const item of [...positions, ...intervals]) {
         const dateMs = new Date(item.date).getTime();
-        const prev = lastUpdateTimes.current.get(item.driver_number) ?? 0;
+        const prev = lastUpdateTimes.get(item.driver_number) ?? 0;
         if (dateMs > prev) {
-          lastUpdateTimes.current.set(item.driver_number, dateMs);
+          lastUpdateTimes.set(item.driver_number, dateMs);
         }
       }
 
@@ -30,7 +30,7 @@ export function useRetirements() {
       const now = Date.now();
       const stale = new Set<number>();
       for (const drv of drivers) {
-        const lastUpd = lastUpdateTimes.current.get(drv.driver_number);
+        const lastUpd = lastUpdateTimes.get(drv.driver_number);
         if (lastUpd && now - lastUpd > STALE_RETIRE) {
           stale.add(drv.driver_number);
         }
@@ -38,7 +38,7 @@ export function useRetirements() {
 
       let sessionActive = false;
       for (const drv of drivers) {
-        const lastUpd = lastUpdateTimes.current.get(drv.driver_number);
+        const lastUpd = lastUpdateTimes.get(drv.driver_number);
         if (lastUpd && now - lastUpd <= STALE_ACTIVE) {
           sessionActive = true;
           break;
@@ -65,7 +65,7 @@ export function useRetirements() {
         setRetiredDrivers(new Set(stale));
       }
     },
-    [],
+    [lastUpdateTimes],
   );
 
   return { retiredDrivers, detectRetirements };
